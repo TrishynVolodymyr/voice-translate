@@ -1,0 +1,18 @@
+# Python 3.11, Windows x64, NVIDIA GPU (CUDA 12.8 build of PyTorch). Installed by Install.bat.
+# PyTorch comes from https://download.pytorch.org/whl/cu128; sherpa-onnx with CUDA is installed by Install.ps1
+# from the k2-fsa wheel (the PyPI one is CPU-only).
+torch==2.11.0+cu128
+torchaudio==2.11.0+cu128
+# 5.22.1 breaks Qwen3-TTS («property 'upsample' … has no setter»)
+transformers==5.15.1
+faster-qwen3-tts==0.5.4
+qwen-tts-hf==0.1.1.post1
+ctranslate2==4.8.4
+sentencepiece==0.2.2
+huggingface-hub==1.33.0
+sounddevice==0.5.6
+soundfile==0.14.0
+pynput==1.8.2
+numpy==2.4.6
+scipy==1.17.1
+audiotsm==0.1.2

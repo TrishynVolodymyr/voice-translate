@@ -1,0 +1,60 @@
+# Roadmap: towards real simultaneous translation
+
+Push-to-talk works well (~0.6–0.7 s from releasing the key to English speech). The simultaneous mode
+(`Start-StreamVoice.bat`) is a working prototype. Below is what is still unsatisfying, what we measured, and what we would
+try next. Numbers are from an RTX 4070 12 GB and one speaker's live tests.
+
+[Українська версія](ROADMAP.uk.md)
+
+## Where the ~3.5 s start goes
+
+Median from the start of a phrase on live speech: first recognition pass 0.9 s → first confirmed Ukrainian word 1.5 s
+(+0.6) → **first English word 3.5 s (+2.0)** → first sound 3.9 s (+0.4; the TTS model itself needs 0.32 s).
+
+Half of it is the translator: offline translators change their translation of the beginning when more words arrive
+(«А ні, я сказав» → "Oh no, I said"; with «навпаки» → "No, I said the opposite"), so English is released only after
+~4 Ukrainian words agree across two translations, minus 2 held-back words.
+
+## Open problems and ideas
+
+### Start latency (goal: ≤ 2 s)
+- [ ] **Translator trained for incomplete sentences** (prefix-to-prefix / "simultaneous" fine-tune). None exists for
+  Ukrainian→English as of Nov 2026. Cheap recipe to try: self-distilled prefix pairs (a prefix's target = the common
+  start of its translation and the full sentence's translation), LoRA on Hy-MT2-1.8B or a 4B LLM.
+- [ ] **LLM translator with an "input may be incomplete, do not guess" instruction** — the IWSLT 2026 winner (Parakeet +
+  an unmodified LLM + common-prefix agreement) did this; worth a word-by-word simulation on Hy-MT2-7B.
+- [ ] **Punctuation-insensitive agreement** — Parakeet flips commas between passes («Так, ну» ↔ «Так ну»); translations
+  then differ and the first word can wait 4+ s. ~1 in 4 phrases is affected.
+- [ ] Ready-made translations for discourse markers at the start («так», «ну», «коротше» → "so", "well", "anyway").
+- Tried and rejected: re-reading every 0.25 s instead of 0.5 s (−0.25 s, but translation diverged 26% vs 20% from the
+  whole-phrase one); holding back 1 word instead of 2 (−0.25 s, lost/duplicated words at joins); AlignAtt on quickmt's
+  attention (same latency/quality curve as holding back); never revoking confirmed words (locked in errors of early
+  passes: 32% divergence).
+
+### Recognition
+- [ ] **Fine-tune Parakeet on the user's voice** — 1–2 h of speech with corrected transcripts (e.g. exported Telegram
+  voice messages + a "listen and fix" page); expected to fix systematic errors («не»→«на», «Та ні»→«Тані»).
+- [ ] fp32 export of Parakeet Ultra for the GPU (int8 Ultra on the CPU is already better than v3 fp32 on the GPU).
+- [ ] A truly streaming Ukrainian recognizer of Parakeet quality. Nemotron 3.5 ASR Streaming was measured: 18–25% WER on
+  the user's voice vs ~8% for Parakeet, for only 0–0.5 s gain — rejected. NVIDIA's unified streaming/offline models
+  (Nemo only, Linux) are worth watching.
+
+### Voice in simultaneous mode
+- [ ] **Audible joins** — every clause is a separate TTS generation with its own intonation. Ideas: continuing
+  generation with the previous piece as acoustic context; fewer, longer pieces where latency allows.
+- [ ] **The voice runs behind on long monologues** — English is about as long as Ukrainian, so the lag grows; catch-up
+  playback (≤1.3×, the listener's ceiling) helps only partly. Shorter translations ("summarize while translating") are
+  an option.
+- [ ] Interjections ("Mm-hmm", "Hmm") make quickmt invent continuations ("Mm-hmm is a good idea"): pass them through
+  untranslated, cap the translation length.
+
+### Games and resources
+- [ ] TTS keeps the GPU busy ~88% of the time while speaking (~1/3 of its power): a duty-cycle limit (e.g. 70%) for
+  games, and measuring FPS impact.
+- [ ] Less VRAM: fp16 Parakeet export (~1.2 GB instead of 2.4).
+- Tried and rejected: Hy-MT2-30B-A3B with experts in RAM (7B quality at ~1.9 GB VRAM, but 1.1–2.4 s per phrase);
+  speculative decoding with a 1.8B draft (slower: experts in RAM make verification expensive).
+
+### Product
+- [ ] Detecting that the other person interrupts (the program does not hear the call) — today: the "be quiet" key.
+- [ ] One-click installer; Linux support; other language pairs (the recognizer and the voice already cover many).
