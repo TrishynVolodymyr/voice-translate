@@ -43,12 +43,15 @@ speaks clause-sized pieces as they become stable.
 
 ## Requirements
 
-- **Windows 10/11, 64-bit.**
-- **NVIDIA GPU with 8 GB VRAM or more** (12 GB recommended; developed on an RTX 4070 12 GB) and a recent driver that
-  supports CUDA 12.8.
+- **Windows 10/11, 64-bit** (Windows only).
+- **NVIDIA GPU with 12 GB VRAM** and a recent driver that supports CUDA 12.8. The default modes use ~8.5 GB; on an
+  8 GB card start them with `--tts 0.6B` or `--asr-device cpu` (expected to fit, not tested).
 - **~25 GB of free disk space**: environment ~6 GB, core models ~8 GB, optional models up to ~12 GB more.
 - A microphone; **headphones** (in simultaneous mode the microphone must not hear the English voice).
 - Internet for the installation only. No accounts or tokens are needed.
+
+**Tested on** one PC so far: Windows 11, RTX 4070 12 GB, Ryzen 5 — including a from-scratch install of a
+fresh clone. Windows 10, other GPUs and 8 GB cards are expected to work but have not been tried; reports are welcome.
 
 ## Installation
 
@@ -140,6 +143,18 @@ output, voice sample, push-to-talk key, llama.cpp port. `.env` stays on your PC 
    game → Input device = «CABLE Output», or Steam → Settings → Voice → Recording device.
 
 Your own Ukrainian voice is not heard there — only the English one.
+
+## If something does not work
+
+- **`CUDA: False` at the end of `Install.bat`** — update the NVIDIA driver (it must support CUDA 12.8) and run it again.
+- **Windows blocks the `.bat` files** (SmartScreen, "Windows protected your PC") — for a downloaded ZIP: right-click the
+  ZIP → Properties → *Unblock* before unpacking, or *More info* → *Run anyway*.
+- **It hears the wrong microphone / plays to the wrong device** — `Record-Samples.bat --list` shows the devices; set
+  `VT_MIC` / `VT_OUT` in `.env` (part of the name is enough).
+- **Out of GPU memory** — close games or other GPU programs, or use `--tts 0.6B`, `--asr-device cpu`.
+- **The voice sounds cut or robotic in Discord** — turn off Krisp noise suppression, echo cancellation and automatic
+  gain for that input.
+- **An antivirus warns about a keyboard hook** — that is the push-to-talk key (pynput listens for Right Ctrl only).
 
 ## Performance (RTX 4070 12 GB, Ryzen 5, measured)
 
