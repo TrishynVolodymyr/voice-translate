@@ -1,4 +1,4 @@
-"""Compares ASR models on the user's recordings. For logs\\samples\\phrase_*.wav the exact text is known
+"""Compares ASR models on the user's recordings. For phrase_*.wav in the voices folder (Record-Samples.bat) the exact text is known
 (prompts.json), so WER is computed (lower case, punctuation removed, ' and ’ unified, є/е in «проєкт» kept as is).
 Live phrases from logs\\out\\*_uk.wav have no reference and are printed side by side. Results go to
 logs\\asr-bench-<stamp>.csv."""

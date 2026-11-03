@@ -31,7 +31,7 @@ def parse_key(name: str):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--key", default=env("VT_PUSH_KEY", "ctrl_r"), help="клавіша «говорю» (pynput: ctrl_r, alt_r, f9, x …)")
-    ap.add_argument("--tts", default="1.7B", choices=["0.6B", "1.7B"], help="1.7B звучить людяніше (вибір користувача)")
+    ap.add_argument("--tts", default="1.7B", choices=["0.6B", "1.7B"], help="1.7B звучить людяніше; 0.6B — на 2 ГБ відеопам'яті менше")
     ap.add_argument("--ref", default=env("VT_REF", "ref_uk"), help="зразок голосу: ім'я в теці голосів (VT_VOICES_DIR) або шлях до WAV")
     ap.add_argument("--mode", default="xvec", choices=["xvec", "icl"],
                     help="xvec — лише тембр, англійська вимова від моделі (без акценту); icl — копіює й манеру/акцент зразка")
