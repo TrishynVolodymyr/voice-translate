@@ -63,7 +63,7 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 
    or download the ZIP and unpack it.
 
-2. **Build the environment** — double-click **`Install.bat`** (~6 GB of downloads, 5–15 minutes). It downloads `uv`,
+2. **Build the environment** — double-click **`Install.bat`** (~6 GB of downloads; 2–15 minutes depending on your connection). It downloads `uv`,
    Python 3.11, PyTorch with CUDA and the other packages into this folder, checking SHA-256 checksums, and prints
    `CUDA: True` and the name of your GPU at the end.
 

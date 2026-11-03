@@ -34,6 +34,10 @@ Half of it is the translator: offline translators change their translation of th
 ### Recognition
 - [ ] **Fine-tune Parakeet on the user's voice** — 1–2 h of speech with corrected transcripts (e.g. exported Telegram
   voice messages + a "listen and fix" page); expected to fix systematic errors («не»→«на», «Та ні»→«Тані»).
+- [ ] **Language slips** — Parakeet sometimes writes Ukrainian speech in Russian or Polish («Обережно, за тим будинком» →
+  «Obereżne za tym budynkiem»), more often on short partial passes. A Ukrainian-only fallback model (NeMo FastConformer
+  uk) fixed this but was triggered by English words too (QuickMT, "in this spirit") and recognized worse — so it is off.
+  Better trigger: only Russian-only / Polish-only letters, not Latin in general.
 - [ ] fp32 export of Parakeet Ultra for the GPU (int8 Ultra on the CPU is already better than v3 fp32 on the GPU).
 - [ ] A truly streaming Ukrainian recognizer of Parakeet quality. Nemotron 3.5 ASR Streaming was measured: 18–25% WER on
   the user's voice vs ~8% for Parakeet, for only 0–0.5 s gain — rejected. NVIDIA's unified streaming/offline models
