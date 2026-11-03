@@ -107,6 +107,7 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 | `Start-StreamTest.bat` / `Start-StreamTest-CPU.bat` | simultaneous, English text only | screen | ~3.8 GB / 0 |
 | `Record-Samples.bat` | record your voice sample | — | — |
 | `Design-Voice.bat` | create a voice from a description | — | ~5 GB |
+| `Setup-VirtualCable.bat` | help installing VB-CABLE, keep your audio devices | — | — |
 
 Launchers accept arguments, e.g. from PowerShell: `.\Start-VoiceTranslate.bat --ref warm --tts 0.6B --cable`.
 
@@ -129,20 +130,21 @@ output, voice sample, push-to-talk key, llama.cpp port. `.env` stays on your PC 
 
 ## Discord and games (virtual microphone)
 
-1. Install **VB-CABLE** (donationware, free for personal use) from <https://vb-audio.com/Cable/>: unpack, run
-   `VBCABLE_Setup_x64.exe` as administrator → *Install Driver*, reboot. This is the only thing installed outside the folder.
-2. **Check your defaults afterwards:** the VB-CABLE installer makes the cable your default microphone *and* speakers.
-   Switch them back in Windows sound settings, or from PowerShell:
-   `. .\scripts\AudioDefault.ps1; Get-Mics; Set-DefaultMic 'your mic'; Get-Speakers; Set-DefaultSpeaker 'your headphones'`.
+1. Install **VB-CABLE** (donationware, free for personal use) — the easiest way is **`Setup-VirtualCable.bat`**: it
+   remembers your microphone and speakers, opens <https://vb-audio.com/Cable/>, and after you install it there
+   (unpack, `VBCABLE_Setup_x64.exe` as administrator → *Install Driver*) switches your devices back — the VB-CABLE
+   installer makes the cable your default microphone *and* speakers. Reboot afterwards. This is the only thing installed
+   outside the folder. (Its license does not allow bundling it, so you download it yourself from the official page.)
+2. If you installed it by hand, check Windows sound settings and choose your own microphone and speakers again, or from
+   PowerShell: `. .\scripts\AudioDefault.ps1; Get-Mics; Set-DefaultMic 'your mic'; Get-Speakers; Set-DefaultSpeaker 'your headphones'`.
 3. Run **`Start-VoiceTranslate-Cable.bat`**. While it runs, «CABLE Output» is the default microphone; quit with
    `q` + Enter and your microphone is restored (if you close the window with ×, it is restored on the next start).
-4. **Discord:** Settings → Voice & Video → Input device = «CABLE Output»; turn off noise suppression (Krisp), echo
-   cancellation and automatic gain — they damage synthesized speech. Voice activity mode works: the cable is silent
-   while the voice is silent.
+4. **Discord:** Settings → Voice & Video → Input device = «CABLE Output». Voice activity mode works: the cable is
+   silent while the voice is silent.
 5. **Games** use the default microphone automatically; otherwise Windows Settings → System → Sound → Volume mixer → the
    game → Input device = «CABLE Output», or Steam → Settings → Voice → Recording device.
 
-Your own Ukrainian voice is not heard there — only the English one.
+Your own Ukrainian voice is not heard there — only the English one. Checked with Discord and Telegram voice messages.
 
 ## If something does not work
 
@@ -152,9 +154,8 @@ Your own Ukrainian voice is not heard there — only the English one.
 - **It hears the wrong microphone / plays to the wrong device** — `Record-Samples.bat --list` shows the devices; set
   `VT_MIC` / `VT_OUT` in `.env` (part of the name is enough).
 - **Out of GPU memory** — close games or other GPU programs, or use `--tts 0.6B`, `--asr-device cpu`.
-- **The voice sounds cut or robotic in Discord** — turn off Krisp noise suppression, echo cancellation and automatic
-  gain for that input.
-- **An antivirus warns about a keyboard hook** — that is the push-to-talk key (pynput listens for Right Ctrl only).
+- **The voice sounds cut or robotic in a call** — try turning off the app's noise suppression (Krisp in Discord), echo
+  cancellation and automatic gain: they are made for live microphones, not for synthesized speech.
 
 ## Performance (RTX 4070 12 GB, Ryzen 5, measured)
 

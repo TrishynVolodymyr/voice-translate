@@ -16,6 +16,7 @@
 !/Download-Models.bat
 !/Record-Samples.bat
 !/Design-Voice.bat
+!/Setup-VirtualCable.bat
 !/Start-VoiceTranslate.bat
 !/Start-VoiceTranslate-QuickMT.bat
 !/Start-VoiceTranslate-Cable.bat
@@ -37,3 +38,4 @@
 !/scripts/Download-Models.ps1
 !/scripts/Start-VoiceTranslate.ps1
 !/scripts/AudioDefault.ps1
+!/scripts/Setup-VirtualCable.ps1
