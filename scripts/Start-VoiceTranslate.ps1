@@ -30,15 +30,24 @@ $ggufs = @{ 'hymt7' = 'hy-mt2\Hy-MT2-7B-Q4_K_M.gguf'; 'hymt1.8' = 'hy-mt2\Hy-MT2
 $useLlm = $ggufs.ContainsKey($mt)
 if ($useLlm) { $gguf = Join-Path $models $ggufs[$mt] }
 
+if (-not (Test-Path $py)) {
+    Write-Host 'Середовище ще не встановлено: спершу запустіть Install.bat, потім Download-Models.bat (див. README).' -ForegroundColor Red
+    exit 1
+}
 $need = @(
-    $py,
     (Join-Path $models 'silero-vad\silero_vad.onnx'),
     (Join-Path $models 'quickmt-uk-en\model.bin'),
     (Join-Path $models 'Qwen3-TTS-12Hz-1.7B-Base\model.safetensors')
 )
 if ($useLlm) { $need += $server, $gguf, (Join-Path $models 'parakeet-ultra-int8\encoder.int8.onnx') }  # LLM => ASR on the CPU: Parakeet Ultra
 else { $need += Join-Path $models 'parakeet-tdt-0.6b-v3-fp32\encoder.weights' }  # quickmt => ASR on the GPU (--asr-device auto)
-foreach ($f in $need) { if (-not (Test-Path $f)) { throw "Не знайдено: $f — запустіть Download-Models.bat (див. README)" } }
+foreach ($f in $need) {
+    if (-not (Test-Path $f)) {
+        $hint = if ($useLlm) { 'Download-Models.bat -Llm' } else { 'Download-Models.bat' }
+        Write-Host "Не знайдено: $f`nЗапустіть $hint (див. README)." -ForegroundColor Red
+        exit 1
+    }
+}
 
 # A window closed with the X button leaves its llama-server running without a parent: stop such leftovers of this
 # folder (they hold ~2–5 GB of VRAM). Servers whose launcher window is still open are left alone.

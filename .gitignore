@@ -11,6 +11,7 @@
 !/ROADMAP.uk.md
 !/THIRD_PARTY.md
 !/requirements.txt
+!/requirements.lock.txt
 !/Install.bat
 !/Download-Models.bat
 !/Record-Samples.bat

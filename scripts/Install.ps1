@@ -44,7 +44,7 @@ if (-not (Test-Path $py)) {
 }
 
 # 3. Packages (PyTorch from its CUDA 12.8 index)
-& $uv pip install --python $py -r (Join-Path $root 'requirements.txt') `
+& $uv pip install --python $py -r (Join-Path $root 'requirements.txt') -c (Join-Path $root 'requirements.lock.txt') `
     --extra-index-url https://download.pytorch.org/whl/cu128 --index-strategy unsafe-best-match
 if ($LASTEXITCODE) { throw 'Встановлення пакетів не вдалося' }
 
