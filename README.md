@@ -4,7 +4,7 @@
 say a phrase in Ukrainian, and a moment later it is spoken in English with your cloned timbre (without an accent) —
 into your headphones and, through a virtual microphone, into Discord, games or any call. Nothing leaves your PC.
 
-[Українська версія](README.uk.md) · [Roadmap](ROADMAP.md) · License: MIT (code); models have their own licenses (see below)
+[Українська версія](README.uk.md) · [Roadmap](ROADMAP.md) · [Research and measurements](docs/RESEARCH.md) · License: MIT (code); models have their own licenses (see below)
 
 ## What it can do
 
@@ -44,7 +44,7 @@ speaks clause-sized pieces as they become stable.
 ## Requirements
 
 - **Windows 10/11, 64-bit** (Windows only).
-- **NVIDIA GPU with 12 GB VRAM** and a recent driver that supports CUDA 12.8. The default modes use ~8.5 GB; on an
+- **NVIDIA GPU with 12 GB VRAM** and a recent driver that supports CUDA 12.8. The default modes use ~8.5–9.6 GB; on an
   8 GB card start them with `--tts 0.6B` or `--asr-device cpu` (expected to fit, not tested).
 - **~25 GB of free disk space**: environment ~6 GB, core models ~8 GB, optional models up to ~12 GB more.
 - A microphone; **headphones** (in simultaneous mode the microphone must not hear the English voice).
@@ -101,7 +101,7 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 | File | Mode | Voice goes to | VRAM (app) |
 |---|---|---|---|
 | `Start-VoiceTranslate-QuickMT.bat` | push-to-talk, fast translator (quickmt) | headphones | ~8.5 GB |
-| `Start-VoiceTranslate.bat` | push-to-talk, most accurate translator (Hy-MT2-7B; needs `-Llm`) | headphones | ~8.3 GB |
+| `Start-VoiceTranslate.bat` | push-to-talk, most accurate translator (Hy-MT2-7B; needs `-Llm`) | headphones | ~9.6 GB |
 | **`Start-VoiceTranslate-Cable.bat`** | push-to-talk (quickmt) **for Discord and calls** | headphones + virtual mic | ~8.5 GB |
 | **`Start-VoiceTranslate-Game.bat`** | push-to-talk **next to a demanding game**: recognition and translation on the CPU, 1.7B voice on the GPU (`--tts 0.6B`: lighter, needs `-Small`) | headphones + virtual mic | ~5 GB (0.6B: ~3 GB) |
 | `Start-StreamVoice.bat` | simultaneous, no key (experimental) | headphones | ~8.5 GB |
@@ -202,7 +202,7 @@ authors and keep their own licenses — all of them allow personal and commercia
 | pynput (keyboard hook) | LGPL-3.0 | used unmodified as a library |
 | VB-CABLE (optional, not bundled) | donationware | free for personal use |
 
-Details: [THIRD_PARTY.md](THIRD_PARTY.md).
+Details: [THIRD_PARTY.md](THIRD_PARTY.md). This project would not exist without the open licenses of these components.
 
 ## What is not solved yet
 

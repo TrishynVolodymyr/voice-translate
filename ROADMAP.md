@@ -67,4 +67,9 @@ Half of it is the translator: offline translators change their translation of th
 
 ### Product
 - [ ] Detecting that the other person interrupts (the program does not hear the call) — today: the "be quiet" key.
-- [ ] One-click installer; Linux support; other language pairs (the recognizer and the voice already cover many).
+- [ ] One-click installer; Linux support.
+- [ ] **Other language pairs.** The recognizer (Parakeet v3 / Ultra) already understands 25 European languages and detects
+  the language itself; Hy-MT2-7B translates between 33 languages; the voice (Qwen3-TTS) speaks 10: English, Chinese,
+  Japanese, Korean, German, French, Russian, Portuguese, Spanish, Italian — not Ukrainian, so English→Ukrainian needs
+  another voice model. The pair is fixed in a few places (the quickmt model, "into English" in the Hy-MT2 prompts,
+  `language="English"` for the voice); moving them into `.env` is a small change — testing quality per pair is the work.

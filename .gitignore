@@ -25,6 +25,7 @@
 !/Start-StreamTest.bat
 !/Start-StreamTest-CPU.bat
 
+!/docs/
 !/scripts/
 /scripts/*
 !/scripts/pipeline.py
