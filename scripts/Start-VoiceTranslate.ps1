@@ -36,8 +36,10 @@ if (-not (Test-Path $py)) {
 }
 # Only the models the chosen mode needs: voice size (--tts) and where recognition runs (--asr-device; auto = on the
 # GPU with quickmt, on the CPU with an LLM translator).
-$tts = if ($argline -match '--tts\s+(\S+)') { $Matches[1] } else { '1.7B' }
-$asrDev = if ($argline -match '--asr-device\s+(\S+)') { $Matches[1] } elseif ($useLlm) { 'cpu' } else { 'cuda' }
+# The last value wins (as in argparse): Start-VoiceTranslate-Game.bat --tts 1.7B overrides its own --tts 0.6B.
+function Get-LastArg([string]$name) { $all = [regex]::Matches($argline, "--$name\s+(\S+)"); if ($all.Count) { $all[$all.Count - 1].Groups[1].Value } }
+$tts = Get-LastArg 'tts'; if (-not $tts) { $tts = '1.7B' }
+$asrDev = Get-LastArg 'asr-device'; if (-not $asrDev -or $asrDev -eq 'auto') { $asrDev = if ($useLlm) { 'cpu' } else { 'cuda' } }
 $need = @(
     (Join-Path $models 'silero-vad\silero_vad.onnx'),
     (Join-Path $models 'quickmt-uk-en\model.bin'),
