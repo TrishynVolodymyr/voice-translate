@@ -3,8 +3,9 @@
 [Українська версія](RESEARCH.uk.md) · [README](../README.md) · [Roadmap](../ROADMAP.md)
 
 > All measurements were made on one PC — Windows 11, NVIDIA RTX 4070 12 GB (driver 621.01), AMD Ryzen 5 7500F
-> (6 cores / 12 threads), 96 GB DDR5 — with one speaker's voice: the 20 standard test phrases from
-> `Record-Samples.bat`, recorded twice (40 recordings, 181 words per take), plus live sessions. Dates: November 2026.
+> (6 cores / 12 threads), 96 GB DDR5 at 3600 MT/s (four modules, slower than usual for DDR5, so CPU timings may be
+> better on a faster setup) — with one speaker's voice: the 20 standard test phrases from `Record-Samples.bat`, recorded
+> twice (40 recordings, 181 words per take), plus live sessions. Dates: November 2026.
 > The numbers are indicative, not benchmarks: small sets, one voice, one machine, and some runs were made while other
 > programs were using the CPU.
 

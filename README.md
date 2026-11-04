@@ -55,8 +55,8 @@ speaks clause-sized pieces as they become stable.
 - Internet for the installation only. No accounts or tokens are needed.
 
 **Tested on** one PC so far: Windows 11, NVIDIA RTX 4070 12 GB (driver 621.01), AMD Ryzen 5 7500F (6 cores /
-12 threads), 96 GB DDR5 — including a from-scratch install of a fresh clone. Windows 10, other GPUs and 8 GB cards are
-expected to work but have not been tried; reports are welcome.
+12 threads), 96 GB DDR5 at 3600 MT/s — including a from-scratch install of a fresh clone. Windows 10, other GPUs and
+8 GB cards are expected to work but have not been tried; reports are welcome.
 
 ## Installation
 
