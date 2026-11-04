@@ -1,8 +1,8 @@
 # Roadmap: towards real simultaneous translation
 
-Push-to-talk works well (~0.6–0.7 s from releasing the key to English speech). The simultaneous mode
+Push-to-talk works well (~0.6–0.7 s from releasing the key to the translated speech). The simultaneous mode
 (`Start-StreamVoice.bat`) is a working prototype. Below is what is still unsatisfying, what we measured, and what we would
-try next. Numbers are from an RTX 4070 12 GB and one speaker's live tests.
+try next. Numbers are from Ukrainian → English, an RTX 4070 12 GB and one speaker's live tests.
 
 [Українська версія](ROADMAP.uk.md)
 
@@ -73,3 +73,4 @@ Half of it is the translator: offline translators change their translation of th
 - [ ] A voice model that speaks Ukrainian (Qwen3-TTS has 10 languages without it), for English → Ukrainian.
 - [ ] Measure quality and speed on other pairs; simultaneous mode for Chinese / Japanese / Korean output (no spaces
   between words).
+- [ ] Program messages in English too (today they are Ukrainian only); test phrases for recognizing other languages.

@@ -1,4 +1,4 @@
-"""Records the user's voice references and Ukrainian test phrases into the voices folder (VT_VOICES_DIR).
+"""Records the user's voice reference (and, for Ukrainian, test phrases) into the voices folder (VT_VOICES_DIR).
 
 Each prompt is shown on screen; Enter starts recording, Enter stops it. Existing files are skipped unless --redo is
 given, so the session can be interrupted and resumed. Transcripts go to prompts.json in that folder (ICL cloning needs
@@ -15,24 +15,30 @@ import sounddevice as sd
 import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).parent))
-from pipeline import VOICES  # noqa: E402
+from pipeline import SRC, SRC_NAME, VOICES  # noqa: E402
 
 OUT = VOICES
 SR = 48000
 
-# The Ukrainian reference is the main one: in xvec mode only the timbre is taken from it, and the English accent
-# comes from the TTS model itself. The English reference is optional (--with-en), for comparison only.
-REFS = [
-    ("ref_uk", "Український зразок голосу. Читайте спокійно, своїм звичайним голосом:",
-     "Привіт, це короткий запис мого звичайного голосу. Я так зазвичай говорю, коли граю з друзями або "
-     "долучаюся до дзвінка. Іноді я говорю трохи швидше, іноді повільніше, але здебільшого звучу саме так. "
-     "Мені подобаються ігри, де треба думати й домовлятися з командою, а не просто бігати й стріляти. "
-     "Дякую, що слухаєте."),
-]
-REF_EN = ("ref_en", "Англійський зразок голосу (необов'язковий). Читайте спокійно, своїм звичайним голосом:",
-          "Hi, this is a short recording of my normal speaking voice. I usually talk like this when I play games "
-          "with friends or join a call. Sometimes I speak a little faster, sometimes slower, but this is how I sound "
-          "most of the time. Thanks for listening.")
+# The reference in the language you speak (VT_SOURCE_LANG) is the main one: in xvec mode only the timbre is taken
+# from it, and the pronunciation of the target language comes from the TTS model itself. Ukrainian and English get a
+# text to read; for other languages any ~30 s of your own (its transcript is then unknown, which only ICL mode needs).
+# An English reference is optional (--with-en), for comparison only.
+UK_TEXT = ("Привіт, це короткий запис мого звичайного голосу. Я так зазвичай говорю, коли граю з друзями або "
+           "долучаюся до дзвінка. Іноді я говорю трохи швидше, іноді повільніше, але здебільшого звучу саме так. "
+           "Мені подобаються ігри, де треба думати й домовлятися з командою, а не просто бігати й стріляти. "
+           "Дякую, що слухаєте.")
+EN_TEXT = ("Hi, this is a short recording of my normal speaking voice. I usually talk like this when I play games "
+           "with friends or join a call. Sometimes I speak a little faster, sometimes slower, but this is how I sound "
+           "most of the time. Thanks for listening.")
+if SRC == "uk":
+    REFS = [("ref_uk", "Український зразок голосу. Читайте спокійно, своїм звичайним голосом:", UK_TEXT)]
+elif SRC == "en":
+    REFS = [("ref_en", "Зразок голосу англійською. Читайте спокійно, своїм звичайним голосом:", EN_TEXT)]
+else:
+    REFS = [(f"ref_{SRC}", f"Зразок голосу ({SRC_NAME}): ~30 с будь-якого тексту вашою мовою, спокійно, своїм звичайним "
+             "голосом — можна перекласти на ходу цей:", EN_TEXT)]
+REF_EN = ("ref_en", "Англійський зразок голосу (необов'язковий). Читайте спокійно, своїм звичайним голосом:", EN_TEXT)
 
 PHRASES = [
     "Привіт, усім чути мене?",
@@ -97,11 +103,12 @@ def main() -> None:
     print(f"Мікрофон: {sd.query_devices(device, 'input')['name']}\n")
 
     prompts = {REF_EN[0]: REF_EN[2]}
-    items = [] if a.set else list(REFS) + ([REF_EN] if a.with_en else [])
-    items += [(f"phrase_{i:02d}", f"Тестова фраза {i}/{len(PHRASES)} — скажіть природно, як у розмові:", t)
+    items = [] if a.set else list(REFS) + ([REF_EN] if a.with_en and SRC != "en" else [])
+    # the test phrases are Ukrainian: they check recognition of Ukrainian speech
+    items += [] if SRC != "uk" else [(f"phrase_{i:02d}", f"Тестова фраза {i}/{len(PHRASES)} — скажіть природно, як у розмові:", t)
               for i, t in enumerate(PHRASES, 1)]
     for name, title, text in items:
-        prompts[name] = text
+        prompts[name] = text if SRC in ("uk", "en") or name != REFS[0][0] else ""
         path = OUT / f"{name}.wav"
         if path.exists() and not a.redo:
             continue

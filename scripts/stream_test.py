@@ -1,8 +1,8 @@
-"""Text-only test of simultaneous translation (M2, step 1): speak without pauses and watch the English grow.
+"""Text-only test of simultaneous translation (M2, step 1): speak without pauses and watch the translation grow.
 
 Sources: the microphone (default) or WAV files played at real-time speed (--wav ...; "--wav phrases" = the 20
 recorded test phrases one after another with 0.3 s gaps), so file runs behave exactly like live speech.
-Every emitted English chunk is logged with its time to logs\\stream-<stamp>\\events.csv; a summary of delays,
+Every emitted chunk of the translation is logged with its time to logs\\stream-<stamp>\\events.csv; a summary of delays,
 CPU load and the final texts is printed at the end (or after q + Enter / Ctrl+C)."""
 import argparse
 import csv
@@ -52,7 +52,7 @@ def mic_producer(q, device, stop):
 
 
 def voice_summary(speaker, segments, inp, out):
-    """voice.wav: left — the Ukrainian input, right — the English voice, both on the input's timeline. The voice is
+    """voice.wav: left — your speech, right — the translated voice, both on the input's timeline. The voice is
     brought to the input's peak level: as generated it is ~3× quieter, and the user barely heard it next to their own."""
     log = speaker.log
     (out / "voice.jsonl").write_text("\n".join(json.dumps(e, ensure_ascii=False) for e in log), encoding="utf-8")
@@ -103,7 +103,7 @@ def main():
     ap.add_argument("--mic", default=env("VT_MIC"))
     ap.add_argument("--voice", action="store_true", help="озвучувати переклад по ходу (Qwen3-TTS, ваш тембр)")
     ap.add_argument("--tts", default="1.7B", choices=["0.6B", "1.7B"])
-    ap.add_argument("--ref", default=env("VT_REF", "ref_uk"), help="зразок голосу: ім'я в теці голосів (VT_VOICES_DIR) або шлях до WAV")
+    ap.add_argument("--ref", default=env("VT_REF", f"ref_{SRC}"), help="зразок голосу: ім'я в теці голосів (VT_VOICES_DIR) або шлях до WAV")
     ap.add_argument("--out", default=env("VT_OUT"), help="пристрій виводу голосу (номер або частина назви; за замовчуванням — системний)")
     ap.add_argument("--cable", action="store_true", help="голос також у віртуальний мікрофон VB-CABLE (Discord, ігри)")
     ap.add_argument("--first-words", type=int, default=1, help="перший шматок фрази озвучувати, щойно стільки слів")

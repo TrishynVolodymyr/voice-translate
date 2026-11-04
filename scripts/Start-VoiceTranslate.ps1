@@ -90,7 +90,7 @@ Get-CimInstance Win32_Process -Filter "Name='llama-server.exe'" |
     ForEach-Object { Write-Host "Зупиняю залишений llama-server (PID $($_.ProcessId))"; Stop-Process -Id $_.ProcessId -Force }
 
 # --cable (Start-VoiceTranslate-Cable.bat): the voice also goes into VB-CABLE, and while the translator runs the
-# Windows default microphone is «CABLE Output», so games that cannot choose a microphone hear the English voice.
+# Windows default microphone is «CABLE Output», so games that cannot choose a microphone hear the translated voice.
 # The previous default is restored on exit; if the window was closed with X, on the next start (logs\default-mic.txt).
 $cable = $args -contains '--cable'
 $micState = Join-Path $root 'logs\default-mic.txt'

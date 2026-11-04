@@ -1,6 +1,6 @@
 """Creates a voice sample from a text description with Qwen3-TTS VoiceDesign — for people who do not want to clone
 their own voice. The sample is saved into the voices folder (VT_VOICES_DIR) and then works exactly like a recorded one:
-the translator takes only its timbre (xvec mode) and speaks English with it.
+the translator takes only its timbre (xvec mode) and speaks the target language with it.
 
     Design-Voice.bat "A calm male voice in his thirties, low and slightly husky, speaking at a relaxed pace" --name calm
     Start-VoiceTranslate.bat --ref calm

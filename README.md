@@ -1,26 +1,27 @@
 # voice-translate
 
-**Speak Ukrainian — others hear English, in your own voice.** A local, offline voice translator for Windows: hold a key,
-say a phrase in Ukrainian, and a moment later it is spoken in English with your cloned timbre (without an accent) —
-into your headphones and, through a virtual microphone, into Discord, games or any call. Nothing leaves your PC.
+**Speak your language — others hear another one, in your own voice.** A local, offline voice translator for Windows:
+hold a key, say a phrase, and a moment later it is spoken in the other language with your cloned timbre (without an
+accent) — into your headphones and, through a virtual microphone, into Discord, games or any call. Nothing leaves your PC.
 
-Ukrainian → English is the default and the pair everything was tuned on; **other languages are two lines in `.env`** —
-see [Languages](#languages).
+Out of the box it translates **Ukrainian → English**, the pair everything was tuned and measured on. **Other pairs are
+two lines in `.env`**: you can speak 25 European languages, and the voice speaks 10 — English, German, French, Spanish,
+Italian, Portuguese, Russian, Chinese, Japanese, Korean. See [Languages](#languages).
 
 [Українська версія](README.uk.md) · [Roadmap](ROADMAP.md) · [Research and measurements](docs/RESEARCH.md) · License: MIT (code); models have their own licenses (see below)
 
 ## What it can do
 
-- **Push-to-talk translation** — hold Right Ctrl, speak, release: English starts **~0.6–0.7 s after you release the
-  key** (measured on an RTX 4070). The whole phrase is translated at once, so quality is best here.
-- **Your voice, without your accent** — the voice is cloned from a ~30 s Ukrainian recording; only the timbre is taken,
-  the English pronunciation comes from the model.
+- **Push-to-talk translation** — hold Right Ctrl, speak, release: the translation starts **~0.6–0.7 s after you release
+  the key** (measured on an RTX 4070). The whole phrase is translated at once, so quality is best here.
+- **Your voice, without your accent** — the voice is cloned from a ~30 s recording of you speaking your own language;
+  only the timbre is taken, the pronunciation of the other language comes from the model.
 - **Or any other voice** — cloning is optional: create a voice from a text description ("a calm male voice in his
   thirties, slightly husky…"), or use any WAV file you have the right to use.
 - **Discord and games** — the voice goes into a virtual microphone (VB-CABLE). While the translator runs, that
   microphone becomes the Windows default, so even games without a microphone setting hear it; your own default is
   restored when you quit.
-- **Simultaneous mode (experimental)** — no key: the English voice follows you while you keep talking, ~2.5–3.5 s
+- **Simultaneous mode (experimental)** — no key: the translated voice follows you while you keep talking, ~2.5–3.5 s
   behind, and speeds up a little (≤1.3×) to catch up.
 - **Fully local** — speech recognition, translation and voice synthesis all run on your GPU/CPU; internet is needed only
   for installation.
@@ -31,17 +32,17 @@ see [Languages](#languages).
  your microphone
       │  (push-to-talk, or Silero VAD in simultaneous mode)
       ▼
- Parakeet (speech → Ukrainian text)            NVIDIA Parakeet-TDT-0.6B-v3 / Parakeet Ultra, sherpa-onnx
+ Parakeet (speech → text)                      NVIDIA Parakeet-TDT-0.6B-v3 / Parakeet Ultra, sherpa-onnx
       ▼
- translator (Ukrainian → English text)         quickmt-uk-en (fast)  or  Hy-MT2-7B via llama.cpp (most accurate)
+ translator (text → the other language)        quickmt (fast)  or  Hy-MT2 via llama.cpp (most accurate)  or  your GGUF
       ▼
- Qwen3-TTS (English speech in your voice)      Qwen3-TTS 1.7B Base, voice clone from your sample, faster-qwen3-tts
+ Qwen3-TTS (the translation, in your voice)    Qwen3-TTS 1.7B Base, voice clone from your sample, faster-qwen3-tts
       ▼
  your headphones  +  «CABLE Output» virtual microphone → Discord / game / call
 ```
 
 Every stage is a separate, replaceable model. In simultaneous mode the recognizer re-reads the growing phrase every
-0.5 s, words are released once two passes agree, the translator continues the already spoken English, and the voice
+0.5 s, words are released once two passes agree, the translator continues the already spoken translation, and the voice
 speaks clause-sized pieces as they become stable.
 
 ## Requirements
@@ -50,7 +51,7 @@ speaks clause-sized pieces as they become stable.
 - **NVIDIA GPU with 12 GB VRAM** and a recent driver that supports CUDA 12.8. The default modes use ~8.5–9.6 GB; on an
   8 GB card start them with `--tts 0.6B` or `--asr-device cpu` (expected to fit, not tested).
 - **~25 GB of free disk space**: environment ~6 GB, core models ~8 GB, optional models up to ~12 GB more.
-- A microphone; **headphones** (in simultaneous mode the microphone must not hear the English voice).
+- A microphone; **headphones** (in simultaneous mode the microphone must not hear the translated voice).
 - Internet for the installation only. No accounts or tokens are needed.
 
 **Tested on** one PC so far: Windows 11, RTX 4070 12 GB, Ryzen 5 — including a from-scratch install of a
@@ -85,8 +86,9 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 
 4. **Choose a voice** — one of:
    - **Your own voice:** run **`Record-Samples.bat`** and read the text shown on screen (~30 s) — Enter starts and
-     stops the recording. Read it in Ukrainian, calmly, in your usual voice: the translator takes only the timbre, so
-     the English comes out without your accent. Twenty short test phrases follow; they are optional (useful for checking
+     stops the recording. Read it calmly, in your usual voice: the translator takes only the timbre, so the translation
+     comes out without your accent. The text is Ukrainian or English, following `VT_SOURCE_LANG`; for another language
+     read any ~30 s of your own. For Ukrainian, twenty short test phrases follow; they are optional (useful for checking
      recognition quality) — stop with Ctrl+C when the reference is done.
    - **A voice from a description:** `Download-Models.bat -VoiceDesign`, then
      `Design-Voice.bat "A calm female voice in her twenties, warm and clear, speaking at a relaxed pace" --name warm`
@@ -96,7 +98,7 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 
    Only clone voices you have the right to use — your own, or with the person's consent.
 
-5. **Run** — double-click a launcher, wait for «Готово», hold **Right Ctrl**, speak Ukrainian, release.
+5. **Run** — double-click a launcher, wait for «Готово», hold **Right Ctrl**, speak, release.
    Quit with **`q` + Enter** in the window.
 
 ## Launchers
@@ -108,7 +110,7 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 | **`Start-VoiceTranslate-Cable.bat`** | push-to-talk (quickmt) **for Discord and calls** | headphones + virtual mic | ~8.5 GB |
 | **`Start-VoiceTranslate-Game.bat`** | push-to-talk **next to a demanding game**: recognition and translation on the CPU, 1.7B voice on the GPU (`--tts 0.6B`: lighter, needs `-Small`) | headphones + virtual mic | ~5 GB (0.6B: ~3 GB) |
 | `Start-StreamVoice.bat` | simultaneous, no key (experimental) | headphones | ~8.5 GB |
-| `Start-StreamTest.bat` / `Start-StreamTest-CPU.bat` | simultaneous, English text only | screen | ~3.8 GB / 0 |
+| `Start-StreamTest.bat` / `Start-StreamTest-CPU.bat` | simultaneous, translated text only | screen | ~3.8 GB / 0 |
 | `Record-Samples.bat` | record your voice sample | — | — |
 | `Design-Voice.bat` | create a voice from a description | — | ~5 GB |
 | `Setup-VirtualCable.bat` | help installing VB-CABLE, keep your audio devices | — | — |
@@ -144,8 +146,8 @@ VT_TARGET_LANG=de
 | Translator quickmt (`-QuickMT`, `-Cable`, `-Game`, simultaneous mode) | only pairs into or from English (`sv-en`, `en-de`, …), one small model per pair |
 
 After changing the pair, run `Download-Models.bat` again: it fetches the quickmt model for the new pair if there is one.
-The program checks the pair at start and says what is missing. Your voice sample can stay in Ukrainian or any other
-language — only its timbre is used.
+The program checks the pair at start and says what is missing; its own messages are in Ukrainian for now (English is
+on the roadmap). Your voice sample can be in any language — only its timbre is used.
 
 ### Translator
 
@@ -203,7 +205,7 @@ microphone and output, voice sample, push-to-talk key, llama.cpp port. `.env` st
    time. Games use the default microphone automatically; otherwise Windows Settings → System → Sound → Volume mixer → the
    game → Input device = «CABLE Output», or Steam → Settings → Voice → Recording device.
 
-Your own Ukrainian voice is not heard there — only the English one. Checked with Discord and Telegram voice messages.
+Your own voice is not heard there — only the translated one. Checked with Discord and Telegram voice messages.
 
 ## If something does not work
 
@@ -216,12 +218,12 @@ Your own Ukrainian voice is not heard there — only the English one. Checked wi
 - **The voice sounds cut or robotic in a call** — try turning off the app's noise suppression (Krisp in Discord), echo
   cancellation and automatic gain: they are made for live microphones, not for synthesized speech.
 
-## Performance (RTX 4070 12 GB, Ryzen 5, measured)
+## Performance (Ukrainian → English, RTX 4070 12 GB, Ryzen 5, measured)
 
 | What | Result |
 |---|---|
-| Push-to-talk: key released → first English sound | ~0.6–0.7 s (quickmt), ~0.65 s (Hy-MT2-7B) |
-| Simultaneous: start of a phrase → first English sound | ~2.5–3.5 s on live speech |
+| Push-to-talk: key released → first sound of the translation | ~0.6–0.7 s (quickmt), ~0.65 s (Hy-MT2-7B) |
+| Simultaneous: start of a phrase → first sound of the translation | ~2.5–3.5 s on live speech |
 | Recognition errors on one speaker (40 phrases) | ~8% WER (Parakeet v3 fp32 on GPU / Parakeet Ultra on CPU) |
 | CPU use while translating | ~2–3% (recognition and translation on the GPU) |
 | In Path of Exile 2 (`Start-VoiceTranslate-Game.bat`) | first sound 0.6–1.0 s after release (1.7B voice; 0.6B: 0.55–1.3 s); game 80–90 FPS while speaking (130–145 without) |
@@ -250,8 +252,8 @@ authors and keep their own licenses — all of them allow personal and commercia
 
 | Component | License | In short |
 |---|---|---|
-| NVIDIA Parakeet-TDT-0.6B-v3, Moondream Parakeet Ultra, quickmt-uk-en | CC-BY-4.0 | anything, with attribution |
-| Qwen3-TTS (Base, VoiceDesign), Hy-MT2-7B, sherpa-onnx, transformers | Apache-2.0 | anything, keep the notices |
+| NVIDIA Parakeet-TDT-0.6B-v3, Moondream Parakeet Ultra, quickmt models | CC-BY-4.0 | anything, with attribution |
+| Qwen3-TTS (Base, VoiceDesign), Hy-MT2 (7B, 1.8B), sherpa-onnx, transformers | Apache-2.0 | anything, keep the notices |
 | Silero VAD, llama.cpp, faster-qwen3-tts, CTranslate2, audiotsm | MIT | anything, keep the notice |
 | pynput (keyboard hook) | LGPL-3.0 | used unmodified as a library |
 | VB-CABLE (optional, not bundled) | donationware | free for personal use |

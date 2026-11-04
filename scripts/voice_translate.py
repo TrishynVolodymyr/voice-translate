@@ -1,6 +1,6 @@
-"""Push-to-talk Ukrainian -> English voice bridge (milestone M0).
+"""Push-to-talk voice bridge (milestone M0); Ukrainian -> English by default, see VT_SOURCE_LANG / VT_TARGET_LANG.
 
-Hold the key and speak Ukrainian; on release the phrase goes through Parakeet (ASR) -> quickmt (MT) ->
+Hold the key and speak; on release the phrase goes through Parakeet (ASR) -> the translator (quickmt / Hy-MT2 / GGUF) ->
 Qwen3-TTS (your cloned voice) and is played on the output device while it is still being generated. Every phrase is
 also saved as WAV in logs\\out\\ and its timings appended to logs\\out\\timings.csv. Ctrl+C stops."""
 import argparse
@@ -18,7 +18,7 @@ import soundfile as sf
 from pynput import keyboard
 
 sys.path.insert(0, str(Path(__file__).parent))
-from pipeline import (ASR, LOGS, SRC_NAME, TGT_NAME, TRANSLATORS, TTS, VOICES, HybridASR, Timer,  # noqa: E402
+from pipeline import (ASR, LOGS, SRC, SRC_NAME, TGT, TGT_NAME, TRANSLATORS, TTS, VOICES, HybridASR, Timer,  # noqa: E402
                       check_languages, device_arg, env, mt_label, mt_where, output_players, print_placement,
                       resample, where)
 
@@ -33,7 +33,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--key", default=env("VT_PUSH_KEY", "ctrl_r"), help="клавіша «говорю» (pynput: ctrl_r, alt_r, f9, x …)")
     ap.add_argument("--tts", default="1.7B", choices=["0.6B", "1.7B"], help="1.7B звучить людяніше; 0.6B — на 2 ГБ відеопам'яті менше")
-    ap.add_argument("--ref", default=env("VT_REF", "ref_uk"), help="зразок голосу: ім'я в теці голосів (VT_VOICES_DIR) або шлях до WAV")
+    ap.add_argument("--ref", default=env("VT_REF", f"ref_{SRC}"), help="зразок голосу: ім'я в теці голосів (VT_VOICES_DIR) або шлях до WAV")
     ap.add_argument("--mode", default="xvec", choices=["xvec", "icl"],
                     help="xvec — лише тембр, вимова від моделі (без акценту); icl — копіює й манеру/акцент зразка")
     ap.add_argument("--mic", default=env("VT_MIC"), help="мікрофон (номер/назва, див. Record-Samples.bat --list)")
@@ -137,7 +137,7 @@ def main() -> None:
                 t = Timer()
                 en = mt(uk)
                 mt_ms = t.ms()
-                print(f"  UA: {uk}\n  EN: {en}", flush=True)
+                print(f"  {SRC.upper()}: {uk}\n  {TGT.upper()}: {en}", flush=True)
                 if not en:
                     continue
                 t, first, chunks, sr = Timer(), None, [], 24000
