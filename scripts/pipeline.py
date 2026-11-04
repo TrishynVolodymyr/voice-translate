@@ -162,9 +162,10 @@ class HybridASR:
 class MT:
     # CPU by default so it takes no VRAM: with the end-of-source token it is 40–80 ms per phrase on a 6-core Ryzen vs
     # ~30 ms on the GPU (2026-11-02). The earlier "1–2 s on CPU" was the missing </s> making it decode to max length.
-    # 2 threads, not 6: when other programs load every core, 6 OpenMP threads wait for each other and one phrase took
-    # up to 86 s; 2 threads stay at ~110 ms under the same load (2026-11-02).
-    def __init__(self, device: str = "cpu", threads: int = 2, beam: int = 5):
+    # 1 thread: when other programs load every core, OpenMP threads wait for each other — 6 threads once took 86 s for a
+    # phrase (2026-11-02), and 2 threads still stalled (40 phrases on a 100% busy CPU: median 1.3 s, max 23 s) while
+    # 1 thread stayed at median 0.16 s, max 0.55 s (2026-11-04, with other programs also running).
+    def __init__(self, device: str = "cpu", threads: int = 1, beam: int = 5):
         import ctranslate2
         import sentencepiece as spm
         if device == "cuda":
@@ -341,13 +342,15 @@ class TTS:
             yield head, sr
 
 
-CABLE = "CABLE Input"  # VB-CABLE: what is played into it comes out of the «CABLE Output» microphone
+# Virtual cable: what is played into this output comes out of its microphone side (VB-CABLE: «CABLE Output»);
+# another cable through VT_CABLE_PLAY / VT_CABLE_MIC in .env (the launcher switches the microphone)
+CABLE = env("VT_CABLE_PLAY", "CABLE Input")
 
 
 def device_arg(v, kind: str = None):
     """Device number, or part of its name (case-insensitive), resolved to an MME device of the given kind
     ("input"/"output"): a name stays valid when the numbering changes or when the Windows default device is switched
-    to the cable by the game mode."""
+    to the cable by the launcher."""
     if v is None or str(v).isdigit():
         return int(v) if v is not None else None
     import sounddevice as sd

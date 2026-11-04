@@ -24,7 +24,7 @@ $argline = $args -join ' '
 # The last value wins (as in argparse): a launcher's own arguments come before the user's (%*).
 function Get-LastArg([string]$name) { $all = [regex]::Matches($argline, "--$name\s+(\S+)"); if ($all.Count) { $all[$all.Count - 1].Groups[1].Value } }
 # Layers of an LLM translator on the GPU, in this order: --ngl typed by the user > VT_MT_NGL in .env > the launcher's
-# own --ngl-default (game mode: 0 = CPU, to leave the VRAM to the game) > 999 (all on the GPU).
+# own --ngl-default (a launcher may suggest e.g. 0 = CPU) > 999 (all on the GPU).
 $ngl = Get-LastArg 'ngl'
 if (-not $ngl) { $ngl = $env:VT_MT_NGL }
 if (-not $ngl) { $ngl = Get-LastArg 'ngl-default' }
@@ -95,14 +95,35 @@ Get-CimInstance Win32_Process -Filter "Name='llama-server.exe'" |
     Where-Object { $_.ExecutablePath -eq $server -and -not (Get-Process -Id $_.ParentProcessId -ErrorAction SilentlyContinue) } |
     ForEach-Object { Write-Host "Зупиняю залишений llama-server (PID $($_.ProcessId))"; Stop-Process -Id $_.ProcessId -Force }
 
-# --cable (Start-VoiceTranslate-Cable.bat): the voice also goes into VB-CABLE, and while the translator runs the
-# Windows default microphone is «CABLE Output», so games that cannot choose a microphone hear the translated voice.
-# The previous default is restored on exit (q + Enter); if the window is closed with X or Ctrl+C kills this script, a
-# hidden watcher restores it once this process is gone; failing that, the next start does (logs\default-mic.txt).
-$cable = $args -contains '--cable'
+# Virtual microphone: whenever a virtual cable is installed and the mode speaks, the voice also goes into it, and while
+# the translator runs the Windows default microphone is the cable's recording side — so Discord, calls and games that
+# cannot choose a microphone hear the translation. VB-CABLE by default; any other cable (VoiceMeeter, Virtual Audio
+# Cable…) through VT_CABLE_PLAY (the playback device the voice goes into) and VT_CABLE_MIC (its recording side) in
+# .env. VT_CABLE=0 turns it off (e.g. to talk to someone in the room through the speakers); --cable forces it on. The previous default is restored on exit (q + Enter); if the window is closed with X
+# or Ctrl+C kills this script, a hidden watcher restores it once this process is gone; failing that, the next start
+# does (logs\default-mic.txt).
 $micState = Join-Path $root 'logs\default-mic.txt'
 $prevMic = $null
-if ($cable -or (Test-Path $micState)) { . (Join-Path $PSScriptRoot 'AudioDefault.ps1') }
+$speaks = -not $stream -or ($args -contains '--voice')
+$cableOff = "$env:VT_CABLE" -in '0', 'off', 'no', 'false'
+$cablePlay = if ($env:VT_CABLE_PLAY) { $env:VT_CABLE_PLAY } else { 'CABLE Input' }
+$cableMic = if ($env:VT_CABLE_MIC) { $env:VT_CABLE_MIC } else { 'CABLE Output' }
+$cable = $false
+if ($speaks -and -not $cableOff -or ($args -contains '--cable') -or (Test-Path $micState)) {
+    . (Join-Path $PSScriptRoot 'AudioDefault.ps1')
+}
+if ($args -contains '--cable') { $cable = $true }
+elseif ($speaks -and -not $cableOff) {
+    $cable = [bool](Get-Mics | Where-Object { $_.Name -like "*$cableMic*" }) -and
+             [bool](Get-Speakers | Where-Object { $_.Name -like "*$cablePlay*" })
+    if (-not $cable -and -not $env:VT_CABLE_MIC -and -not $env:VT_CABLE_PLAY) {
+        Write-Host ('Віртуальний мікрофон VB-CABLE не встановлено — переклад звучить лише у ваших навушниках. Щоб його ' +
+                    'чули Discord, ігри й дзвінки, запустіть Setup-VirtualCable.bat (або вкажіть інший кабель у .env).') -ForegroundColor Yellow
+    } elseif (-not $cable) {
+        Write-Host ("Не знайдено віртуальний кабель «$cablePlay» → «$cableMic» (VT_CABLE_PLAY / VT_CABLE_MIC у .env) — " +
+                    'переклад звучить лише у ваших навушниках.') -ForegroundColor Yellow
+    }
+}
 if (Test-Path $micState) {
     $id = (Get-Content $micState -Raw).Trim()
     try { [VT.AudioDevices2]::SetDefault($id); Write-Host 'Повернуто мікрофон за замовчуванням після минулого запуску' } catch {}
@@ -143,13 +164,14 @@ try {
     $pass = @()
     for ($i = 0; $i -lt $args.Count; $i++) {
         if ($args[$i] -in '--mt', '--mt-default', '--ngl', '--ngl-default', '--asr-device') { $i++; continue }
-        if ($args[$i] -ne '--stream-test') { $pass += $args[$i] }
+        if ($args[$i] -notin '--stream-test', '--cable') { $pass += $args[$i] }
     }
+    if ($cable) { $pass += '--cable' }
     # resolved values, so Python runs and shows exactly what was checked here
     $pass += '--mt', $mtName, '--ngl', $ngl, '--asr-device', $asrDev
     if ($cable) {
         $prevMic = Get-DefaultMic
-        if ($prevMic.Name -like '*CABLE*') { throw 'Мікрофон за замовчуванням уже «CABLE Output» — поверніть свій у налаштуваннях звуку Windows' }
+        if ($prevMic.Name -like "*$cableMic*") { throw "Мікрофон за замовчуванням уже «$($prevMic.Name)» — поверніть свій у налаштуваннях звуку Windows" }
         Set-Content -Path $micState -Value $prevMic.Id -Encoding ascii
         # The watcher runs in its own hidden console, so closing this window does not kill it. It waits for this
         # PowerShell process to end and restores the microphone if the state file is still there (q + Enter removes
@@ -159,8 +181,8 @@ try {
                  "[VT.AudioDevices2]::SetDefault((Get-Content `$s -Raw).Trim()); Remove-Item `$s }"
         Start-Process powershell -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass',
             '-EncodedCommand', [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($watch)))
-        Set-DefaultMic 'CABLE Output' | Out-Null
-        Write-Host "Мікрофон за замовчуванням тепер «CABLE Output» (для ігор); перекладач слухає «$($prevMic.Name)»."
+        Set-DefaultMic $cableMic | Out-Null
+        Write-Host "Мікрофон за замовчуванням тепер «$cableMic» (для Discord та ігор); перекладач слухає «$($prevMic.Name)»."
         Write-Host 'Виходьте через q + Enter — тоді Windows одразу поверне ваш мікрофон.'
         # MME device names are cut to 31 characters: the start of the name is enough to find the microphone
         if (-not ($args -contains '--mic')) { $pass += '--mic', $prevMic.Name.Substring(0, [Math]::Min(25, $prevMic.Name.Length)) }

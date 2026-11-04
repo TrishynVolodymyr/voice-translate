@@ -39,4 +39,4 @@ if (-not (Test-Cable)) {
 [VT.AudioDevices2]::SetDefault($out.Id)
 Write-Host "Готово: «CABLE Output» з'явився, а за замовчуванням знову ваші пристрої:" -ForegroundColor Green
 Write-Host "  мікрофон «$((Get-DefaultMic).Name)», звук «$((Get-DefaultSpeaker).Name)»."
-Write-Host 'VB-Audio радить перезавантажити ПК, щоб завершити установку. Далі: Start-VoiceTranslate-Cable.bat.'
+Write-Host 'VB-Audio радить перезавантажити ПК, щоб завершити установку. Далі: Start-VoiceTranslate.bat — він сам знайде кабель.'

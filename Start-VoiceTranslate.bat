@@ -1,6 +1,8 @@
 @echo off
 chcp 65001 >nul
-rem Push-to-talk with the most accurate translator, Hy-MT2-7B (needs Download-Models.bat -Llm); recognition on the CPU.
-rem Hold Right Ctrl, speak, release - hear the translation in your voice (languages: .env). Exit: q + Enter.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Start-VoiceTranslate.ps1" %*
+rem Push-to-talk: hold Right Ctrl, speak, release - the translation sounds in your voice in your headphones and, if
+rem VB-CABLE is installed, in the «CABLE Output» virtual microphone for Discord, calls and games (it is the Windows
+rem default microphone while this runs; yours comes back on exit). Recognition and translation on the CPU, the voice
+rem on the GPU (~5 GB VRAM). Languages, translator (VT_MT) and the rest: .env. Exit: q + Enter or close the window.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\Start-VoiceTranslate.ps1" --mt-default quickmt %*
 pause

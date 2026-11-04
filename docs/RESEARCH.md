@@ -109,7 +109,9 @@ with numbers. All LLMs with greedy decoding (temperature 0), so results are dete
   negation. On 1.8B the same context format broke the output (it echoed parts of the prompt).
 - Bugs found and fixed: without the `</s>` token at the end of the source, quickmt decoded to the maximum length and
   looped on short phrases (this looked like "1–2 s per phrase"); with six CPU threads on a busy CPU, quickmt sometimes
-  stalled for up to 86 s (median 77 ms) — on 2 threads it is a stable ~110 ms, on the GPU 32 ms (+0.4 GB VRAM).
+  stalled for up to 86 s (median 77 ms) — on 2 threads it was ~110 ms, on the GPU 32 ms (+0.4 GB VRAM). Under a 100%
+  busy CPU even 2 threads stalled (40 phrases: median 1.3 s, max 23 s), 1 thread did not (median 0.16 s, max 0.55 s),
+  so quickmt now uses 1 thread on the CPU (2026-11-04, measured with other programs also loading the CPU).
   quickmt also invents continuations for interjections. Hy-MT2-7B and 1.8B use different chat templates, so the
   prompt is built by llama-server (`/apply-template`).
 
@@ -257,8 +259,8 @@ without the voice).
 | Mode | Voice speed vs real time | Key release → first sound | Game FPS while speaking |
 |---|---|---|---|
 | Full mode (~8.5 GB) next to the game | 8–20× **slower** than real time (VRAM overflow, the game keeps priority) | — | game keeps its FPS |
-| Game mode, voice 1.7B (`Start-VoiceTranslate-Game.bat`) | 1.07–1.10× faster | 0.6–1.0 s | 80–90 (130–145 without) |
-| Game mode, voice 0.6B (`--tts 0.6B`) | 1.1–1.3× faster | 0.55–1.3 s | 80–90 (130–145 without) |
+| Recognition and quickmt on the CPU (today's default), voice 1.7B | 1.07–1.10× faster | 0.6–1.0 s | 80–90 (130–145 without) |
+| The same, voice 0.6B (`--tts 0.6B`) | 1.1–1.3× faster | 0.55–1.3 s | 80–90 (130–145 without) |
 
 Game mode runs recognition and translation on the CPU and only the voice on the GPU; measured without heavy effects.
 Headroom is small (1.07–1.3×); ideas — buffering a whole phrase when generation falls below real time, and a GPU
@@ -297,7 +299,7 @@ What bit us, how we noticed, and what we did — for anyone building a similar l
 | Pitfall | How it showed up | What we did |
 |---|---|---|
 | quickmt without the end-of-source token `</s>` | short phrases looped ("Thank you. Thank you…"), 1–2 s on the CPU | append `</s>` as the quickmt library does: 40–80 ms |
-| CTranslate2 with 6 OpenMP threads while the CPU is busy | most phrases ~80 ms, single ones up to 86 s | 2 threads on the CPU (~110 ms, stable), or the GPU |
+| CTranslate2 with several OpenMP threads while the CPU is busy | single phrases up to 86 s (6 threads) or 23 s (2 threads) | 1 thread on the CPU (median 0.16 s, max 0.55 s at 100% CPU), or the GPU |
 | Resampling every 0.1 s mic chunk with torchaudio | 36% of all cores while silent | `scipy.signal.resample_poly`: 0.6% |
 | sherpa-onnx CUDA after PyTorch has started CUDA | CUDA provider fails (DLL error 1114) and silently falls back to the CPU | load recognition before the voice model |
 | Parakeet on CUDA with < 0.8 s of audio | ~220 ms instead of ~80 ms — and the first pass of every phrase is that short | pad short audio with silence to 1 s |

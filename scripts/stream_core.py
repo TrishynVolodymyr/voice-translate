@@ -106,7 +106,7 @@ class StreamingASR:
 class QuickMTPrefix:
     """quickmt (model for the VT_SOURCE_LANG-VT_TARGET_LANG pair) with a forced prefix (CTranslate2 target_prefix)."""
 
-    def __init__(self, device: str = "cpu", threads: int = 2):  # 2 threads: see pipeline.MT
+    def __init__(self, device: str = "cpu", threads: int = 1):  # 1 thread: see pipeline.MT
         import ctranslate2
         import sentencepiece as spm
         if device == "cuda":

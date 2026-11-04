@@ -18,12 +18,8 @@
 !/Design-Voice.bat
 !/Setup-VirtualCable.bat
 !/Start-VoiceTranslate.bat
-!/Start-VoiceTranslate-QuickMT.bat
-!/Start-VoiceTranslate-Cable.bat
-!/Start-VoiceTranslate-Game.bat
 !/Start-StreamVoice.bat
 !/Start-StreamTest.bat
-!/Start-StreamTest-CPU.bat
 
 !/docs/
 !/scripts/

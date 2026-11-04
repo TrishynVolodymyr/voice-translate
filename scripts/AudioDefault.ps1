@@ -1,5 +1,5 @@
 ﻿# Default recording device of Windows, without third-party tools (Core Audio COM via a small inline C# class).
-# Used by the game mode: while the translator runs, the default microphone is "CABLE Output" (games that cannot
+# Used by the launcher's virtual microphone: while the translator runs, the default microphone is "CABLE Output" (games that cannot
 # choose a microphone hear the translated voice); on exit the previous default (your own microphone) is restored.
 #   . .\AudioDefault.ps1; Get-Mics; Get-DefaultMic; Set-DefaultMic 'CABLE Output'; Get-Speakers; Set-DefaultSpeaker 'Headphones'
 # Changes only the default device (all roles: console, multimedia, communications); nothing is installed.

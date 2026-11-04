@@ -78,7 +78,7 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 
    | Command | Adds | Size |
    |---|---|---|
-   | `Download-Models.bat -Llm` | Hy-MT2-7B translator + llama.cpp — needed by `Start-VoiceTranslate.bat` (best quality) | ~5 GB |
+   | `Download-Models.bat -Llm` | Hy-MT2-7B translator + llama.cpp — the most accurate translator (`VT_MT=hymt7`) | ~5 GB |
    | `Download-Models.bat -VoiceDesign` | model that creates a voice from a description (`Design-Voice.bat`) | ~4.2 GB |
    | `Download-Models.bat -Small` | smaller 0.6B voice (−2 GB VRAM, less natural) | ~2.4 GB |
 
@@ -98,31 +98,28 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 
    Only clone voices you have the right to use — your own, or with the person's consent.
 
-5. **Run** — double-click a launcher, wait for «Готово», hold **Right Ctrl**, speak, release.
+5. **Run** — double-click **`Start-VoiceTranslate.bat`**, wait for «Готово», hold **Right Ctrl**, speak, release.
    Quit with **`q` + Enter** in the window.
 
 ## Launchers
 
 | File | Mode | Voice goes to | VRAM (app) |
 |---|---|---|---|
-| `Start-VoiceTranslate-QuickMT.bat` | push-to-talk, fast translator (quickmt) | headphones | ~5 GB |
-| `Start-VoiceTranslate.bat` | push-to-talk, most accurate translator (Hy-MT2-7B; needs `-Llm`) | headphones | ~9.6 GB |
-| **`Start-VoiceTranslate-Cable.bat`** | push-to-talk (quickmt) **for Discord and calls** | headphones + virtual mic | ~5 GB |
-| **`Start-VoiceTranslate-Game.bat`** | push-to-talk **next to a demanding game**: recognition and translation on the CPU, 1.7B voice on the GPU (`--tts 0.6B`: lighter, needs `-Small`) | headphones + virtual mic | ~5 GB (0.6B: ~3 GB) |
-| `Start-StreamVoice.bat` | simultaneous, no key (experimental) | headphones | ~8.5 GB |
-| `Start-StreamTest.bat` / `Start-StreamTest-CPU.bat` | simultaneous, translated text only | screen | ~3.8 GB / 0 |
+| **`Start-VoiceTranslate.bat`** | **push-to-talk — the main one**: Discord, calls, games. Recognition and translation (quickmt) on the CPU, the voice on the GPU | headphones + virtual mic (if VB-CABLE is installed) | ~5 GB (`--tts 0.6B`: ~3 GB; `VT_MT=hymt7`: ~9.6 GB) |
+| `Start-StreamVoice.bat` | simultaneous, no key (experimental) | headphones + virtual mic | ~8.5 GB |
+| `Start-StreamTest.bat` | simultaneous, translated text only | screen | ~3.8 GB (`VT_ASR_DEVICE=cpu`: 0) |
 | `Record-Samples.bat` | record your voice sample | — | — |
 | `Design-Voice.bat` | create a voice from a description | — | ~5 GB |
 | `Setup-VirtualCable.bat` | help installing VB-CABLE, keep your audio devices | — | — |
 
-Launchers accept arguments, e.g. from PowerShell: `.\Start-VoiceTranslate.bat --ref warm --tts 0.6B --cable`.
+Launchers accept arguments, e.g. from PowerShell: `.\Start-VoiceTranslate.bat --ref warm --tts 0.6B`.
 
 | Argument | Meaning |
 |---|---|
 | `--ref NAME` | voice sample from `voices\` (default `ref_<VT_SOURCE_LANG>`, e.g. `ref_uk`) or a path to a WAV |
 | `--tts 1.7B` / `0.6B` | voice model size (0.6B: −2 GB VRAM, less natural) |
 | `--mt quickmt` / `hymt7` | translator: fast and literal / most accurate (needs `-Llm`) |
-| `--cable` | also send the voice into the VB-CABLE virtual microphone |
+| `--cable` | force the virtual microphone on (it is on by itself when the cable is found; `VT_CABLE=0` in `.env` turns it off) |
 | `--key ctrl_r` | push-to-talk key (pynput names: `alt_r`, `f9`, `x`…) |
 | `--mic NAME`, `--out NAME` | microphone / output device (part of its name or its number; `Record-Samples.bat --list`) |
 | `--asr-device cuda` / `cpu` | where recognition (and quickmt) runs; also `VT_ASR_DEVICE` in `.env`. Push-to-talk uses the CPU (more accurate Parakeet Ultra, ~0.15 s slower than the GPU, which would take ~3.5 GB more); the simultaneous mode uses the GPU (a busy CPU cannot keep up with it) |
@@ -151,27 +148,24 @@ on the roadmap). Your voice sample can be in any language — only its timbre is
 
 ### Translator
 
-The translator is a replaceable part. Each launcher has its own (Hy-MT2-7B for `Start-VoiceTranslate.bat`, quickmt for
-the light ones); `VT_MT` in `.env` replaces it in all of them:
+The translator is a replaceable part: quickmt by default, anything else through `VT_MT` in `.env`:
 
 | `VT_MT` | What it is | VRAM | Per phrase (RTX 4070) |
 |---|---|---|---|
-| *(empty)* | each launcher's own choice | | |
+| *(empty)* | quickmt | | |
 | `quickmt` | small dedicated model per pair, only into / from English | little, or none on the CPU | ~0.05 s |
 | `hymt7` | Hy-MT2-7B, the most accurate | ~5 GB | ~0.2 s |
-| `hymt1.8` | Hy-MT2-1.8B, any pair of its languages at a small cost | ~1.9 GB | ~0.1 s (CPU in game mode: ~0.7–0.9 s) |
+| `hymt1.8` | Hy-MT2-1.8B, any pair of its languages at a small cost | ~1.9 GB | ~0.1 s (on the CPU: ~0.7–0.9 s) |
 | `models\my-model.gguf` | **any GGUF** — e.g. your own fine-tune; a path relative to this folder or absolute | depends | |
 
 `Download-Models.bat` fetches what `VT_MT` names (and llama.cpp for any GGUF); your own GGUF you put in place yourself.
 A GGUF runs in the folder's llama-server with its own chat template and gets the Hy-MT2 instruction
 («Translate the following text into German…»), so a Hy-MT2 fine-tune fits as is; any chat model that follows such an
-instruction works too. A `--mt …` typed after a launcher wins over `.env` (`Start-VoiceTranslate-QuickMT.bat` always uses
-quickmt).
+instruction works too. A `--mt …` typed after a launcher wins over `.env`.
 
 **Where it runs.** At start the program prints which part runs on the CPU and which on the GPU. A GGUF translator goes
-to the GPU, except in game mode: there it runs on the **CPU** to leave the VRAM to the game — slower (Hy-MT2-1.8B
-~0.7–0.9 s per phrase instead of ~0.1 s). With VRAM to spare (16 GB, or a small translator) put it on the GPU with
-`VT_MT_NGL=999` in `.env` — or a number of layers to split it; `VT_MT_NGL` applies to every launcher.
+to the GPU. Next to a demanding game put it on the **CPU** with `VT_MT_NGL=0` in `.env`, to leave the VRAM to the game —
+slower (Hy-MT2-1.8B ~0.7–0.9 s per phrase instead of ~0.1 s); a number of layers splits it between the two.
 
 Example — Polish → German, where quickmt has no model: `VT_MT=hymt1.8`, then `Download-Models.bat`, and every launcher
 uses Hy-MT2-1.8B.
@@ -194,16 +188,19 @@ microphone and output, voice sample, push-to-talk key, llama.cpp port. `.env` st
    outside the folder. (Its license does not allow bundling it, so you download it yourself from the official page.)
 2. If you installed it by hand, check Windows sound settings and choose your own microphone and speakers again, or from
    PowerShell: `. .\scripts\AudioDefault.ps1; Get-Mics; Set-DefaultMic 'your mic'; Get-Speakers; Set-DefaultSpeaker 'your headphones'`.
-3. Run **`Start-VoiceTranslate-Cable.bat`**. While it runs, «CABLE Output» is the default microphone; quit with
-   `q` + Enter, or simply close the window: your microphone is restored either way (a small hidden helper waits for
-   the window to close).
+3. Run **`Start-VoiceTranslate.bat`** — it finds the cable by itself. While it runs, «CABLE Output» is the default
+   microphone; quit with `q` + Enter, or simply close the window: your microphone is restored either way (a small
+   hidden helper waits for the window to close). `VT_CABLE=0` in `.env` turns the cable off, e.g. to play the
+   translation through speakers to someone in the room.
+   **Another virtual cable** (VoiceMeeter, Virtual Audio Cable, your own): name its two sides in `.env` —
+   `VT_CABLE_PLAY` (the playback device the voice goes into) and `VT_CABLE_MIC` (the microphone other programs hear);
+   part of the name is enough.
 4. **Discord:** Settings → Voice & Video → Input device = «CABLE Output». Voice activity mode works: the cable is
    silent while the voice is silent.
-5. **Games:** use **`Start-VoiceTranslate-Game.bat`** — like the Cable one (recognition and quickmt on the CPU, only
-   the voice on the GPU, ~5 GB), and a GGUF translator also runs on the CPU there. With recognition or a big translator
-   on the GPU (~8.5–9.6 GB) it does not fit next to a demanding game in 12 GB: the voice then becomes 8–20× slower than
-   real time while the game keeps its FPS. The game mode fits; if the voice stutters in heavy scenes, add
-   `--tts 0.6B`. Capping the game's FPS leaves the voice more GPU
+5. **Games:** the same `Start-VoiceTranslate.bat` — recognition and quickmt run on the CPU, only the voice on the GPU
+   (~5 GB), which fits next to a demanding game in 12 GB. With recognition or a big translator on the GPU (~8.5–9.6 GB)
+   it does not: the voice then becomes 8–20× slower than real time while the game keeps its FPS. With a GGUF translator
+   set `VT_MT_NGL=0`; if the voice stutters in heavy scenes, add `--tts 0.6B`. Capping the game's FPS leaves the voice more GPU
    time. Games use the default microphone automatically; otherwise Windows Settings → System → Sound → Volume mixer → the
    game → Input device = «CABLE Output», or Steam → Settings → Voice → Recording device.
 
@@ -228,7 +225,7 @@ Your own voice is not heard there — only the translated one. Checked with Disc
 | Simultaneous: start of a phrase → first sound of the translation | ~2.5–3.5 s on live speech |
 | Recognition errors on one speaker (40 phrases) | ~8% WER (Parakeet v3 fp32 on GPU / Parakeet Ultra on CPU) |
 | CPU use | push-to-talk: busy only while a phrase is processed (~0.2–0.4 s); simultaneous mode: ~2–3% (recognition on the GPU) |
-| In Path of Exile 2 (`Start-VoiceTranslate-Game.bat`) | first sound 0.6–1.0 s after release (1.7B voice; 0.6B: 0.55–1.3 s); game 80–90 FPS while speaking (130–145 without) |
+| In Path of Exile 2 (recognition and quickmt on the CPU) | first sound 0.6–1.0 s after release (1.7B voice; 0.6B: 0.55–1.3 s); game 80–90 FPS while speaking (130–145 without) |
 
 Translation quality: Hy-MT2-7B is the most accurate (times, numbers, negation, uses the previous phrases as context);
 quickmt is literal but ~30 ms per phrase.

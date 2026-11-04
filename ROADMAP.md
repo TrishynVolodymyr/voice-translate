@@ -54,10 +54,10 @@ Half of it is the translator: offline translators change their translation of th
 
 ### Games and resources
 - Measured in Path of Exile 2: the full mode next to the game generated speech 8–20× slower than real time (VRAM
-  overflow, the game keeps priority); the game mode (`Start-VoiceTranslate-Game.bat`, recognition and translation on the
-  CPU) speaks 1.07–1.10× faster than real time with the 1.7B voice (first sound 0.6–1.0 s) and 1.1–1.3× with 0.6B
+  overflow, the game keeps priority); the light setup (recognition and translation on the CPU — now the default of
+  `Start-VoiceTranslate.bat`) speaks 1.07–1.10× faster than real time with the 1.7B voice (first sound 0.6–1.0 s) and 1.1–1.3× with 0.6B
   (0.55–1.3 s); game 80–90 FPS (130–145 without), measured while running without heavy effects.
-- [ ] The game mode has little headroom (1.07–1.3×): when generation falls below real time, buffer the whole phrase
+- [ ] Next to a game the voice has little headroom (1.07–1.3×): when generation falls below real time, buffer the whole phrase
   and play it in one piece instead of stuttering.
 - [ ] TTS keeps the GPU busy ~88% of the time while speaking (~1/3 of its power): a duty-cycle limit (e.g. 70%) for
   games.
