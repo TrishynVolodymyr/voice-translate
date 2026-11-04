@@ -60,7 +60,7 @@
 1. **Отримати код**
 
    ```bash
-   git clone https://github.com/<you>/voice-translate.git C:\voice-translate
+   git clone https://github.com/TrishynVolodymyr/voice-translate.git C:\voice-translate
    ```
 
    або завантажити ZIP і розпакувати.

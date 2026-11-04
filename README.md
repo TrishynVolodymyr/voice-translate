@@ -61,7 +61,7 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 1. **Get the code**
 
    ```bash
-   git clone https://github.com/<you>/voice-translate.git C:\voice-translate
+   git clone https://github.com/TrishynVolodymyr/voice-translate.git C:\voice-translate
    ```
 
    or download the ZIP and unpack it.
