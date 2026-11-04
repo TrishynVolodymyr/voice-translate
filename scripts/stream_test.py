@@ -18,7 +18,7 @@ import numpy as np
 import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).parent))
-from pipeline import LOGS, TTS, VOICES, device_arg, env, output_players, resample  # noqa: E402
+from pipeline import LOGS, TTS, VOICES, check_languages, device_arg, env, output_players, resample  # noqa: E402
 from stream_core import SR, HyMTPrefix, QuickMTPrefix, Segmenter, Speaker, StreamingASR, StreamingMT  # noqa: E402
 
 CHUNK = 0.1  # seconds of audio per producer chunk
@@ -78,7 +78,7 @@ def voice_summary(speaker, segments, inp, out):
     print(f"Голос: {len(log)} шматків; від готового тексту до першого звуку шматка медіана {np.median(gen):.2f} с "
           f"(макс {max(gen):.2f}); очікування в черзі медіана {np.median(wait):.2f} с (макс {max(wait):.2f})")
     if voiced:
-        print(f"Перший англійський звук після початку висловлювання: медіана {np.median(first_voice):.2f} с "
+        print(f"Перший звук перекладу після початку висловлювання: медіана {np.median(first_voice):.2f} с "
               f"(макс {max(first_voice):.2f}); голос замовкає після кінця мовлення: медіана {np.median(voice_end):.2f} с "
               f"(макс {max(voice_end):.2f})")
     print(f"Запис (ліворуч ви, праворуч голос): {out / 'voice.wav'}")
@@ -113,6 +113,7 @@ def main():
 
     out = LOGS / f"stream-{time.strftime('%Y%m%d-%H%M%S')}"
     out.mkdir(parents=True)
+    check_languages(a.mt, a.asr)
     print("Завантаження моделей…", flush=True)
     dev = a.asr_device if a.asr_device != "auto" else ("cuda" if a.mt == "quickmt" else "cpu")
     print(f"Розпізнавання: {'відеокарта' if dev == 'cuda' else 'процесор'}", flush=True)
@@ -147,9 +148,9 @@ def main():
                     stop.set()
                     return
         threading.Thread(target=wait_quit, daemon=True).start()
-        print("Говоріть українською без пауз — англійський текст ростиме по ходу. Вихід: q + Enter.", flush=True)
+        print("Говоріть без пауз — переклад ростиме по ходу. Вихід: q + Enter.", flush=True)
         if speaker and not a.mute:
-            print("Голос увімкнено — слухайте в навушниках, інакше мікрофон почує англійський голос.", flush=True)
+            print("Голос увімкнено — слухайте в навушниках, інакше мікрофон почує голос перекладу.", flush=True)
             from pynput import keyboard
             k = a.skip_key
             skip_key = getattr(keyboard.Key, k) if hasattr(keyboard.Key, k) else keyboard.KeyCode.from_char(k)
@@ -301,7 +302,7 @@ def main():
     partial = sum(1 for e in events if not e["final"])
     print(f"\n=== {len(segments)} висловлювань, {wall:.0f} с; mt={a.mt}, asr={dev}, step={a.step}, silence={a.silence}")
     if lag_first:
-        print(f"Перший англійський текст після початку висловлювання: медіана {np.median(lag_first):.2f} с "
+        print(f"Перший текст перекладу після початку висловлювання: медіана {np.median(lag_first):.2f} с "
               f"(мін {min(lag_first):.2f}, макс {max(lag_first):.2f})")
     if lag_end:
         print(f"Від кінця мовлення до кінця перекладу: медіана {a.silence + np.median(lag_end):.2f} с (з них {a.silence} с — очікування паузи)")

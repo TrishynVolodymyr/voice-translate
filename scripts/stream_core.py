@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-from pipeline import ASR, LLAMA_URL, MODELS, slipped
+from pipeline import ASR, LLAMA_URL, MODELS, QUICKMT, TGT_NAME, slipped
 
 SR = 16000
 
@@ -104,7 +104,7 @@ class StreamingASR:
 
 
 class QuickMTPrefix:
-    """quickmt-uk-en with a forced English prefix (CTranslate2 target_prefix)."""
+    """quickmt (model for the VT_SOURCE_LANG-VT_TARGET_LANG pair) with a forced prefix (CTranslate2 target_prefix)."""
 
     def __init__(self, device: str = "cpu", threads: int = 2):  # 2 threads: see pipeline.MT
         import ctranslate2
@@ -112,7 +112,7 @@ class QuickMTPrefix:
         if device == "cuda":
             import torch  # CTranslate2 finds cuBLAS in torch's bundled CUDA libraries
             os.add_dll_directory(str(Path(torch.__file__).parent / "lib"))
-        d = MODELS / "quickmt-uk-en"
+        d = MODELS / QUICKMT
         self.tr = ctranslate2.Translator(str(d), device=device, compute_type="int8" if device == "cpu" else "int8_float16",
                                          intra_threads=threads)
         self.src = spm.SentencePieceProcessor(model_file=str(d / "src.spm.model"))
@@ -130,10 +130,10 @@ class HyMTPrefix:
     already spoken appended after the assistant tag. Optional context = previous segments (card's
     "[Background Information]" prompt; works on 7B)."""
 
-    PLAIN = ("Translate the following text into English. Note that you should only output the translated result "
-             "without any additional explanation:\n\n{text}")
-    WITH_BG = ("[Background Information]\n{bg}\n\nPlease translate the following text into English, taking the "
-               "provided background information into consideration.\n\n[Source Text]\n{text}")
+    PLAIN = ("Translate the following text into " + TGT_NAME + ". Note that you should only output the translated "
+             "result without any additional explanation:\n\n{text}")
+    WITH_BG = ("[Background Information]\n{bg}\n\nPlease translate the following text into " + TGT_NAME + ", taking "
+               "the provided background information into consideration.\n\n[Source Text]\n{text}")
 
     def __init__(self, url: str = LLAMA_URL):
         self.url = url

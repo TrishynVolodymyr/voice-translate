@@ -18,8 +18,8 @@ import soundfile as sf
 from pynput import keyboard
 
 sys.path.insert(0, str(Path(__file__).parent))
-from pipeline import (ASR, LOGS, TRANSLATORS, TTS, VOICES, HybridASR, Timer, device_arg, env,  # noqa: E402
-                      output_players, resample)
+from pipeline import (ASR, LOGS, SRC_NAME, TGT_NAME, TRANSLATORS, TTS, VOICES, HybridASR, Timer,  # noqa: E402
+                      check_languages, device_arg, env, output_players, resample)
 
 MIC_SR = 48000
 
@@ -34,7 +34,7 @@ def main() -> None:
     ap.add_argument("--tts", default="1.7B", choices=["0.6B", "1.7B"], help="1.7B звучить людяніше; 0.6B — на 2 ГБ відеопам'яті менше")
     ap.add_argument("--ref", default=env("VT_REF", "ref_uk"), help="зразок голосу: ім'я в теці голосів (VT_VOICES_DIR) або шлях до WAV")
     ap.add_argument("--mode", default="xvec", choices=["xvec", "icl"],
-                    help="xvec — лише тембр, англійська вимова від моделі (без акценту); icl — копіює й манеру/акцент зразка")
+                    help="xvec — лише тембр, вимова від моделі (без акценту); icl — копіює й манеру/акцент зразка")
     ap.add_argument("--mic", default=env("VT_MIC"), help="мікрофон (номер/назва, див. Record-Samples.bat --list)")
     ap.add_argument("--out", default=env("VT_OUT"), help="пристрій виводу (номер або частина назви; за замовчуванням — системний)")
     ap.add_argument("--cable", action="store_true", help="голос також у віртуальний мікрофон VB-CABLE (Discord, ігри)")
@@ -59,6 +59,7 @@ def main() -> None:
     outdir = LOGS / "out"
     outdir.mkdir(parents=True, exist_ok=True)
 
+    check_languages(a.mt, a.asr)
     print("Завантаження моделей…", flush=True)
     dev = a.asr_device if a.asr_device != "auto" else ("cuda" if a.mt == "quickmt" else "cpu")
     print(f"Розпізнавання: {'відеокарта' if dev == 'cuda' else 'процесор'}", flush=True)
@@ -164,7 +165,7 @@ def main() -> None:
     threading.Thread(target=worker, daemon=True).start()
     threading.Thread(target=wait_for_quit, daemon=True).start()
     with sd.InputStream(samplerate=MIC_SR, channels=1, dtype="float32", callback=mic_cb, device=device_arg(a.mic, "input")):
-        print(f"\nГотово. Тримайте [{a.key}] і говоріть українською; відпустіть — почуєте англійською.\n"
+        print(f"\nГотово. Тримайте [{a.key}] і говоріть ({SRC_NAME}); відпустіть — почуєте переклад ({TGT_NAME}).\n"
               f"Голос: Qwen3-TTS {a.tts}, зразок {ref.name}, режим {a.mode}; переклад: {a.mt}.\n"
               f"Вихід: q + Enter (або Ctrl+C).\n", flush=True)
         with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:

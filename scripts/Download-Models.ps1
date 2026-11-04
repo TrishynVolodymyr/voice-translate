@@ -11,7 +11,19 @@ $root = Split-Path -Parent $PSScriptRoot
 $py = Join-Path $root '.venv\Scripts\python.exe'
 $hf = Join-Path $root '.venv\Scripts\hf.exe'
 if (-not (Test-Path $hf)) { throw 'Спершу запустіть Install.bat' }
-$m = if ($env:VT_MODELS_DIR) { $env:VT_MODELS_DIR } else { Join-Path $root 'models' }
+# Settings from .env (models folder, language pair); variables already set in the environment win.
+$envFile = Join-Path $root '.env'
+if (Test-Path $envFile) {
+    foreach ($line in Get-Content $envFile -Encoding UTF8) {
+        if ($line -notmatch '^\s*#' -and $line -match '^\s*([A-Za-z_]\w*)\s*=\s*(.*?)\s*$' -and
+            -not [Environment]::GetEnvironmentVariable($Matches[1])) {
+            Set-Item "env:$($Matches[1])" $Matches[2].Trim('"')
+        }
+    }
+}
+$src = if ($env:VT_SOURCE_LANG) { $env:VT_SOURCE_LANG.ToLower() } else { 'uk' }
+$tgt = if ($env:VT_TARGET_LANG) { $env:VT_TARGET_LANG.ToLower() } else { 'en' }
+$m =if ($env:VT_MODELS_DIR) { $env:VT_MODELS_DIR } else { Join-Path $root 'models' }
 if (-not [IO.Path]::IsPathRooted($m)) { $m = Join-Path $root $m }
 $env:HF_HUB_CACHE = Join-Path $root 'cache\hf'
 $env:HF_XET_CACHE = Join-Path $root 'cache\xet'
@@ -39,7 +51,15 @@ Get-Checked 'https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/
             '9E2449E1087496D8D4CABA907F23E0BD3F78D91FA552479BB9C23AC09CBB1FD6' (Join-Path $m 'silero-vad') | Out-Null
 Get-HF 'chrmongeau/sherpa-onnx-nemo-parakeet-ultra-int8' 'parakeet-ultra-int8' @('encoder.int8.onnx', 'decoder.int8.onnx', 'joiner.int8.onnx', 'tokens.txt')
 Get-HF 'csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3' 'parakeet-tdt-0.6b-v3-fp32' @('encoder.onnx', 'encoder.weights', 'decoder.onnx', 'joiner.onnx', 'tokens.txt')
-Get-HF 'quickmt/quickmt-uk-en' 'quickmt-uk-en' @('config.json', 'model.bin', 'source_vocabulary.json', 'target_vocabulary.json', 'src.spm.model', 'tgt.spm.model', 'README.md')
+# quickmt has a separate model for each pair, only from and into English (quickmt-uk-en, quickmt-en-de, …)
+$qm = "quickmt-$src-$tgt"
+$hasQm = $true
+try { Invoke-RestMethod "https://huggingface.co/api/models/quickmt/$qm" | Out-Null } catch { $hasQm = $false }
+if ($hasQm) {
+    Get-HF "quickmt/$qm" $qm @('config.json', 'model.bin', 'source_vocabulary.json', 'target_vocabulary.json', 'src.spm.model', 'tgt.spm.model', 'README.md')
+} else {
+    Write-Host "Для пари $src→$tgt немає моделі quickmt — перекладатиме Hy-MT2-7B (Download-Models.bat -Llm, Start-VoiceTranslate.bat)." -ForegroundColor Yellow
+}
 Get-HF 'Qwen/Qwen3-TTS-12Hz-1.7B-Base' 'Qwen3-TTS-12Hz-1.7B-Base' @()
 
 if ($Small) { Get-HF 'Qwen/Qwen3-TTS-12Hz-0.6B-Base' 'Qwen3-TTS-12Hz-0.6B-Base' @() }

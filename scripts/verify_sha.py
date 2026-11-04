@@ -12,12 +12,13 @@ REPOS = {
     "parakeet-tdt-0.6b-v3-int8": "csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8",
     "parakeet-tdt-0.6b-v3-fp32": "csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3",
     "parakeet-ultra-int8": "chrmongeau/sherpa-onnx-nemo-parakeet-ultra-int8",
-    "quickmt-uk-en": "quickmt/quickmt-uk-en",
     "Qwen3-TTS-12Hz-0.6B-Base": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
     "Qwen3-TTS-12Hz-1.7B-Base": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
     "Qwen3-TTS-12Hz-1.7B-VoiceDesign": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
     "hy-mt2": "tencent/Hy-MT2-7B-GGUF",
 }
+# quickmt: one model per language pair (VT_SOURCE_LANG-VT_TARGET_LANG), the folder is named as the repository
+REPOS.update({p.name: f"quickmt/{p.name}" for p in sorted(MODELS.glob("quickmt-*")) if p.is_dir()})
 
 
 def sha256(p: Path) -> str:

@@ -4,6 +4,9 @@
 say a phrase in Ukrainian, and a moment later it is spoken in English with your cloned timbre (without an accent) —
 into your headphones and, through a virtual microphone, into Discord, games or any call. Nothing leaves your PC.
 
+Ukrainian → English is the default and the pair everything was tuned on; **other languages are two lines in `.env`** —
+see [Languages](#languages).
+
 [Українська версія](README.uk.md) · [Roadmap](ROADMAP.md) · [Research and measurements](docs/RESEARCH.md) · License: MIT (code); models have their own licenses (see below)
 
 ## What it can do
@@ -124,10 +127,35 @@ Launchers accept arguments, e.g. from PowerShell: `.\Start-VoiceTranslate.bat --
 
 In simultaneous mode **Right Ctrl** means "be quiet": the voice drops everything it has not said yet.
 
+## Languages
+
+Set the pair in `.env` with ISO codes, for example Polish → German:
+
+```
+VT_SOURCE_LANG=pl
+VT_TARGET_LANG=de
+```
+
+| Part | Languages |
+|---|---|
+| You speak (Parakeet recognizes it, no setting needed) | 25: bg cs da de el en es et fi fr hr hu it lt lv mt nl pl pt ro ru sk sl sv uk |
+| The voice speaks (Qwen3-TTS) | 10: en zh ja ko de fr ru pt es it — **no Ukrainian**, so English → Ukrainian is not possible yet |
+| Translator Hy-MT2-7B (`Start-VoiceTranslate.bat`, needs `Download-Models.bat -Llm`) | from cs de en es fr it nl pl pt ru uk into any of the 10 voice languages; other source languages may work, untested |
+| Translator quickmt (`-QuickMT`, `-Cable`, `-Game`, simultaneous mode) | only pairs into or from English (`sv-en`, `en-de`, …), one small model per pair |
+
+After changing the pair, run `Download-Models.bat` again: it fetches the quickmt model for the new pair if there is one.
+If there is none (e.g. Polish → German), use `Start-VoiceTranslate.bat`, or add `--mt hymt7` to the other launchers.
+The program checks the pair at start and says what is missing. Your voice sample can stay in Ukrainian or any other
+language — only its timbre is used.
+
+Checked: Ukrainian → English in depth (every number in this README); Ukrainian → German, Ukrainian → French and
+English → German briefly (translation and voice, the voice recognized back word for word). The simultaneous mode counts
+words by spaces, so for Chinese, Japanese or Korean output use push-to-talk.
+
 ## Configuration (`.env`)
 
-Copy `.env.example` to `.env` to change defaults without arguments: model / voice / log folders, default microphone and
-output, voice sample, push-to-talk key, llama.cpp port. `.env` stays on your PC (it is git-ignored).
+Copy `.env.example` to `.env` to change defaults without arguments: language pair, model / voice / log folders, default
+microphone and output, voice sample, push-to-talk key, llama.cpp port. `.env` stays on your PC (it is git-ignored).
 
 ## Discord and games (virtual microphone)
 

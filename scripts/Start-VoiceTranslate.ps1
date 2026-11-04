@@ -1,4 +1,4 @@
-﻿# Starts the push-to-talk Ukrainian -> English voice bridge. Arguments are passed to voice_translate.py
+﻿# Starts the push-to-talk voice bridge (Ukrainian -> English by default; languages in .env). Arguments are passed to voice_translate.py
 # (e.g. --tts 0.6B --mt quickmt --mode icl --key f9 --out 17 --ngl 28).
 # For an LLM translator (default Hy-MT2-7B) this script also starts the folder's own llama-server on
 # 127.0.0.1:8093 (VT_LLAMA_PORT) with -ngl from --ngl (default 999 = all layers on GPU) and stops it on exit.
@@ -42,9 +42,9 @@ $tts = Get-LastArg 'tts'; if (-not $tts) { $tts = '1.7B' }
 $asrDev = Get-LastArg 'asr-device'; if (-not $asrDev -or $asrDev -eq 'auto') { $asrDev = if ($useLlm) { 'cpu' } else { 'cuda' } }
 $need = @(
     (Join-Path $models 'silero-vad\silero_vad.onnx'),
-    (Join-Path $models 'quickmt-uk-en\model.bin'),
     (Join-Path $models "Qwen3-TTS-12Hz-$tts-Base\model.safetensors")
 )
+# quickmt: one model per language pair (VT_SOURCE_LANG / VT_TARGET_LANG); its absence is explained by the Python side
 if ($useLlm) { $need += $server, $gguf }
 if ($asrDev -eq 'cpu') { $need += Join-Path $models 'parakeet-ultra-int8\encoder.int8.onnx' }
 else { $need += Join-Path $models 'parakeet-tdt-0.6b-v3-fp32\encoder.weights' }

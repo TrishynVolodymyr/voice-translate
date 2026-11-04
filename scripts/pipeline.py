@@ -1,6 +1,6 @@
-"""Building blocks of the Ukrainian -> English voice bridge: ASR (Parakeet-TDT-0.6B-v3 via sherpa-onnx),
-MT (quickmt-uk-en via CTranslate2) and TTS (Qwen3-TTS via faster-qwen3-tts). Shared by the benchmarks and the
-push-to-talk tool."""
+"""Building blocks of the voice bridge (Ukrainian -> English by default, see VT_SOURCE_LANG / VT_TARGET_LANG):
+ASR (Parakeet-TDT-0.6B-v3 / Ultra via sherpa-onnx), MT (quickmt via CTranslate2, or Hy-MT2 via llama-server) and
+TTS (Qwen3-TTS via faster-qwen3-tts). Shared by the benchmarks and the push-to-talk tool."""
 import os
 import queue
 import re
@@ -40,6 +40,43 @@ VOICES = _folder("VT_VOICES_DIR", "voices")  # voice samples and prompts.json �
 LOGS = _folder("VT_LOGS_DIR", "logs")
 LLAMA_URL = f"http://127.0.0.1:{env('VT_LLAMA_PORT', '8093')}"
 ASR_SR = 16000
+
+# Language pair, ISO 639-1 codes. You speak SRC (anything Parakeet recognises), the voice speaks TGT (one of the
+# Qwen3-TTS languages). Translation: Hy-MT2 takes the target by name; quickmt needs a model for the exact pair, and
+# quickmt only has pairs from and into English.
+ASR_LANGS = {"bg": "Bulgarian", "cs": "Czech", "da": "Danish", "de": "German", "el": "Greek", "en": "English",
+             "es": "Spanish", "et": "Estonian", "fi": "Finnish", "fr": "French", "hr": "Croatian", "hu": "Hungarian",
+             "it": "Italian", "lt": "Lithuanian", "lv": "Latvian", "mt": "Maltese", "nl": "Dutch", "pl": "Polish",
+             "pt": "Portuguese", "ro": "Romanian", "ru": "Russian", "sk": "Slovak", "sl": "Slovenian", "sv": "Swedish",
+             "uk": "Ukrainian"}
+TTS_LANGS = {"en": "English", "zh": "Chinese", "ja": "Japanese", "ko": "Korean", "de": "German", "fr": "French",
+             "ru": "Russian", "pt": "Portuguese", "es": "Spanish", "it": "Italian"}
+# Of the Parakeet languages, these are on Hy-MT2's list of 33 (its model card); others may work, untested.
+HYMT_LANGS = {"cs", "de", "en", "es", "fr", "it", "nl", "pl", "pt", "ru", "uk"}
+SRC = env("VT_SOURCE_LANG", "uk").strip().lower()
+TGT = env("VT_TARGET_LANG", "en").strip().lower()
+SRC_NAME, TGT_NAME = ASR_LANGS.get(SRC, SRC), TTS_LANGS.get(TGT, TGT)
+QUICKMT = f"quickmt-{SRC}-{TGT}"
+
+
+def check_languages(mt: str = "", asr: str = "") -> None:
+    """Stops with a clear message when the pair in .env cannot work; warns when it is only untested."""
+    if SRC not in ASR_LANGS:
+        raise SystemExit(f"VT_SOURCE_LANG={SRC}: розпізнавач (Parakeet) знає лише {' '.join(sorted(ASR_LANGS))}")
+    if TGT not in TTS_LANGS:
+        raise SystemExit(f"VT_TARGET_LANG={TGT}: голос (Qwen3-TTS) говорить лише {' '.join(TTS_LANGS)}")
+    if SRC == TGT:
+        raise SystemExit(f"VT_SOURCE_LANG і VT_TARGET_LANG однакові ({SRC})")
+    if mt == "quickmt" and not (MODELS / QUICKMT / "model.bin").exists():
+        raise SystemExit(f"Немає моделі {QUICKMT} у {MODELS}. quickmt має пари лише з англійської й на англійську: "
+                         "запустіть Download-Models.bat (завантажує модель для пари з .env) або перекладайте через "
+                         "Hy-MT2-7B (Start-VoiceTranslate.bat).")
+    if asr == "hybrid" and SRC != "uk":
+        raise SystemExit("--asr hybrid лише для української (запасна модель NeMo знає тільки її)")
+    if mt.startswith("hymt") and SRC not in HYMT_LANGS:
+        print(f"Увага: {SRC_NAME} немає в списку мов Hy-MT2 — якість перекладу не перевірена.", flush=True)
+    if (SRC, TGT) != ("uk", "en"):
+        print(f"Мови: {SRC_NAME} → {TGT_NAME} (VT_SOURCE_LANG / VT_TARGET_LANG у .env)", flush=True)
 
 
 def resample(audio: np.ndarray, sr: int, target: int) -> np.ndarray:
@@ -133,7 +170,7 @@ class MT:
         if device == "cuda":
             import torch  # CTranslate2 finds cuBLAS in torch's bundled CUDA libraries
             os.add_dll_directory(str(Path(torch.__file__).parent / "lib"))
-        d = MODELS / "quickmt-uk-en"
+        d = MODELS / QUICKMT
         self.tr = ctranslate2.Translator(str(d), device=device, compute_type="int8" if device == "cpu" else "int8_float16",
                                          intra_threads=threads)
         self.src = spm.SentencePieceProcessor(model_file=str(d / "src.spm.model"))
@@ -160,11 +197,11 @@ class LLMMT:
     """TranslateGemma-4B through this folder's own llama-server (runtime\\). The prompt is the model's own chat
     template (see logs\\translategemma-template.jinja), sent raw to /completion."""
 
-    PROMPT = ("<start_of_turn>user\nYou are a professional Ukrainian (uk) to English (en) translator. Your goal is to "
-              "accurately convey the meaning and nuances of the original Ukrainian text while adhering to English "
-              "grammar, vocabulary, and cultural sensitivities.\nProduce only the English translation, without any "
-              "additional explanations or commentary. Please translate the following Ukrainian text into English:"
-              "\n\n\n{text}<end_of_turn>\n<start_of_turn>model\n")
+    PROMPT = ("<start_of_turn>user\nYou are a professional {sn} ({s}) to {tn} ({t}) translator. Your goal is to "
+              "accurately convey the meaning and nuances of the original {sn} text while adhering to {tn} "
+              "grammar, vocabulary, and cultural sensitivities.\nProduce only the {tn} translation, without any "
+              "additional explanations or commentary. Please translate the following {sn} text into {tn}:"
+              "\n\n\n{{text}}<end_of_turn>\n<start_of_turn>model\n").format(sn=SRC_NAME, s=SRC, tn=TGT_NAME, t=TGT)
 
     def __init__(self, url: str = LLAMA_URL):
         self.url = url
@@ -182,13 +219,14 @@ class LLMMT:
 
 class HyMT:
     """Tencent Hy-MT2 (1.8B / 7B) through this folder's llama-server, using the model's own chat template (--jinja)
-    and the prompts from its model card. With context=N the previous N Ukrainian phrases go in as
-    "[Background Information]", the card's documented way to give the model the conversation so far."""
+    and the prompts from its model card (target language by its English name). With context=N the previous N
+    source phrases go in as "[Background Information]", the card's documented way to give the model the conversation
+    so far."""
 
-    PLAIN = ("Translate the following text into English. Note that you should only output the translated result "
-             "without any additional explanation:\n\n{text}")
-    WITH_BG = ("[Background Information]\n{bg}\n\nPlease translate the following text into English, taking the "
-               "provided background information into consideration.\n\n[Source Text]\n{text}")
+    PLAIN = ("Translate the following text into " + TGT_NAME + ". Note that you should only output the translated "
+             "result without any additional explanation:\n\n{text}")
+    WITH_BG = ("[Background Information]\n{bg}\n\nPlease translate the following text into " + TGT_NAME + ", taking "
+               "the provided background information into consideration.\n\n[Source Text]\n{text}")
     # Card recommendation for 1.8B/7B; greedy=True switches to deterministic decoding for comparison.
     SAMPLING = {"temperature": 0.7, "top_p": 0.6, "top_k": 20, "repeat_penalty": 1.05}
 
@@ -245,7 +283,7 @@ class TTS:
 
     def warmup(self) -> None:
         self.model.warmup(prefill_len=100)
-        for _ in self.stream("Warming up the voice."):
+        for _ in self.stream("Warming up the voice." if TGT == "en" else "OK."):
             pass
 
     def stream(self, text: str, chunk_size: int = 4, trim: bool = True):
@@ -253,7 +291,7 @@ class TTS:
         ~0.45 s per phrase (2026-11-02); 50 ms before the first sound (> -45 dBFS in 20 ms frames) are kept."""
         head = None if trim else False
         for audio, sr, _ in self.model.generate_voice_clone_streaming(
-                text=text, language="English", ref_audio=self.ref_audio, ref_text=self.ref_text,
+                text=text, language=TGT_NAME, ref_audio=self.ref_audio, ref_text=self.ref_text,
                 xvec_only=self.xvec_only, chunk_size=chunk_size):
             audio = np.asarray(audio, dtype=np.float32).reshape(-1)
             if head is False:
