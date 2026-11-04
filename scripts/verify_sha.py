@@ -8,17 +8,19 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from pipeline import MODELS  # noqa: E402
 
-REPOS = {
-    "parakeet-tdt-0.6b-v3-int8": "csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8",
-    "parakeet-tdt-0.6b-v3-fp32": "csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3",
-    "parakeet-ultra-int8": "chrmongeau/sherpa-onnx-nemo-parakeet-ultra-int8",
-    "Qwen3-TTS-12Hz-0.6B-Base": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
-    "Qwen3-TTS-12Hz-1.7B-Base": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
-    "Qwen3-TTS-12Hz-1.7B-VoiceDesign": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-    "hy-mt2": "tencent/Hy-MT2-7B-GGUF",
-}
+# (folder in models\, Hugging Face repository); one folder may hold files of several repositories (hy-mt2)
+REPOS = [
+    ("parakeet-tdt-0.6b-v3-int8", "csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8"),
+    ("parakeet-tdt-0.6b-v3-fp32", "csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3"),
+    ("parakeet-ultra-int8", "chrmongeau/sherpa-onnx-nemo-parakeet-ultra-int8"),
+    ("Qwen3-TTS-12Hz-0.6B-Base", "Qwen/Qwen3-TTS-12Hz-0.6B-Base"),
+    ("Qwen3-TTS-12Hz-1.7B-Base", "Qwen/Qwen3-TTS-12Hz-1.7B-Base"),
+    ("Qwen3-TTS-12Hz-1.7B-VoiceDesign", "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"),
+    ("hy-mt2", "tencent/Hy-MT2-7B-GGUF"),
+    ("hy-mt2", "tencent/Hy-MT2-1.8B-GGUF"),
+]
 # quickmt: one model per language pair (VT_SOURCE_LANG-VT_TARGET_LANG), the folder is named as the repository
-REPOS.update({p.name: f"quickmt/{p.name}" for p in sorted(MODELS.glob("quickmt-*")) if p.is_dir()})
+REPOS += [(p.name, f"quickmt/{p.name}") for p in sorted(MODELS.glob("quickmt-*")) if p.is_dir()]
 
 
 def sha256(p: Path) -> str:
@@ -30,7 +32,7 @@ def sha256(p: Path) -> str:
 
 
 bad = 0
-for local, repo in REPOS.items():
+for local, repo in REPOS:
     if not (MODELS / local).exists():  # optional model not downloaded
         continue
     meta = json.load(urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}?blobs=true"))

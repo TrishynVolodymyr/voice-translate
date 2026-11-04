@@ -252,11 +252,20 @@ class HyMT:
 
 # Translator choices for --mt: name -> (GGUF served by llama-server or None, constructor). Hy-MT2-7B gets the two
 # previous phrases as context (works on 7B; on 1.8B the context prompt leaked into the output, 2026-11-02).
+# "gguf" = any other GGUF set in VT_MT (e.g. a fine-tune): the launcher serves it with llama-server and its own chat
+# template, and it gets the Hy-MT2 prompt without context.
 TRANSLATORS = {
     "hymt7": ("hy-mt2\\Hy-MT2-7B-Q4_K_M.gguf", lambda: HyMT(context=2, greedy=True)),
-    "hymt1.8": ("hy-mt2\\Hy-MT2-1.8B-Q8_0.gguf", lambda: HyMT(greedy=True)),    "gemma": ("translategemma-4b-it\\translategemma-4b-it.Q6_K.gguf", lambda: LLMMT()),
+    "hymt1.8": ("hy-mt2\\Hy-MT2-1.8B-Q8_0.gguf", lambda: HyMT(greedy=True)),
+    "gemma": ("translategemma-4b-it\\translategemma-4b-it.Q6_K.gguf", lambda: LLMMT()),
+    "gguf": (None, lambda: HyMT(greedy=True)),
     "quickmt": (None, lambda device="cpu": MT(device)),
 }
+
+
+def mt_label(mt: str) -> str:
+    """What to print for the translator: the file name for a custom GGUF."""
+    return Path(env("VT_MT", "")).name if mt == "gguf" and env("VT_MT") else mt
 
 
 def load_qwen_tts(name: str):

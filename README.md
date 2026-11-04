@@ -144,9 +144,30 @@ VT_TARGET_LANG=de
 | Translator quickmt (`-QuickMT`, `-Cable`, `-Game`, simultaneous mode) | only pairs into or from English (`sv-en`, `en-de`, …), one small model per pair |
 
 After changing the pair, run `Download-Models.bat` again: it fetches the quickmt model for the new pair if there is one.
-If there is none (e.g. Polish → German), use `Start-VoiceTranslate.bat`, or add `--mt hymt7` to the other launchers.
 The program checks the pair at start and says what is missing. Your voice sample can stay in Ukrainian or any other
 language — only its timbre is used.
+
+### Translator
+
+The translator is a replaceable part. Each launcher has its own (Hy-MT2-7B for `Start-VoiceTranslate.bat`, quickmt for
+the light ones); `VT_MT` in `.env` replaces it in all of them:
+
+| `VT_MT` | What it is | VRAM | Per phrase (RTX 4070) |
+|---|---|---|---|
+| *(empty)* | each launcher's own choice | | |
+| `quickmt` | small dedicated model per pair, only into / from English | little, or none on the CPU | ~0.05 s |
+| `hymt7` | Hy-MT2-7B, the most accurate | ~5 GB | ~0.2 s |
+| `hymt1.8` | Hy-MT2-1.8B, any pair of its languages at a small cost | ~1.9 GB | ~0.1 s (CPU in game mode: ~0.7–0.9 s) |
+| `models\my-model.gguf` | **any GGUF** — e.g. your own fine-tune; a path relative to this folder or absolute | depends | |
+
+`Download-Models.bat` fetches what `VT_MT` names (and llama.cpp for any GGUF); your own GGUF you put in place yourself.
+A GGUF runs in the folder's llama-server with its own chat template and gets the Hy-MT2 instruction
+(«Translate the following text into German…»), so a Hy-MT2 fine-tune fits as is; any chat model that follows such an
+instruction works too. A `--mt …` typed after a launcher wins over `.env` (`Start-VoiceTranslate-QuickMT.bat` always uses
+quickmt). In game mode a GGUF translator runs on the CPU (`--ngl 0`) to leave the VRAM to the game.
+
+Example — Polish → German, where quickmt has no model: `VT_MT=hymt1.8`, then `Download-Models.bat`, and every launcher
+uses Hy-MT2-1.8B.
 
 Checked: Ukrainian → English in depth (every number in this README); Ukrainian → German, Ukrainian → French and
 English → German briefly (translation and voice, the voice recognized back word for word). The simultaneous mode counts

@@ -1,6 +1,6 @@
-﻿# Starts the push-to-talk voice bridge (Ukrainian -> English by default; languages in .env). Arguments are passed to voice_translate.py
-# (e.g. --tts 0.6B --mt quickmt --mode icl --key f9 --out 17 --ngl 28).
-# For an LLM translator (default Hy-MT2-7B) this script also starts the folder's own llama-server on
+﻿# Starts the push-to-talk voice bridge (Ukrainian -> English by default; languages and translator in .env). Arguments
+# are passed to voice_translate.py (e.g. --tts 0.6B --mt quickmt --mode icl --key f9 --out 17 --ngl 28).
+# For an LLM translator (default Hy-MT2-7B, or any GGUF in VT_MT) this script also starts the folder's own llama-server on
 # 127.0.0.1:8093 (VT_LLAMA_PORT) with -ngl from --ngl (default 999 = all layers on GPU) and stops it on exit.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -21,14 +21,35 @@ $models = if (-not $env:VT_MODELS_DIR) { Join-Path $root 'models' }
           else { Join-Path $root $env:VT_MODELS_DIR }
 $port = if ($env:VT_LLAMA_PORT) { [int]$env:VT_LLAMA_PORT } else { 8093 }
 $argline = $args -join ' '
-# The last --mt wins (as in argparse): Start-StreamTest.bat passes "--mt quickmt" before the user's own arguments.
-$mtAll = [regex]::Matches($argline, '--mt\s+(\S+)')
-$mt = if ($mtAll.Count) { $mtAll[$mtAll.Count - 1].Groups[1].Value } else { 'hymt7' }
-$ngl = if ($argline -match '--ngl\s+(\S+)') { $Matches[1] } else { '999' }
+# The last value wins (as in argparse): a launcher's own arguments come before the user's (%*).
+function Get-LastArg([string]$name) { $all = [regex]::Matches($argline, "--$name\s+(\S+)"); if ($all.Count) { $all[$all.Count - 1].Groups[1].Value } }
+$ngl = Get-LastArg 'ngl'; if (-not $ngl) { $ngl = '999' }
+# Translator, in this order: --mt typed by the user > VT_MT in .env > the launcher's own --mt-default > Hy-MT2-7B.
+# A value is a built-in name or the path to any GGUF (e.g. your own fine-tune), served by llama-server with its chat
+# template and prompted like Hy-MT2.
 $ggufs = @{ 'hymt7' = 'hy-mt2\Hy-MT2-7B-Q4_K_M.gguf'; 'hymt1.8' = 'hy-mt2\Hy-MT2-1.8B-Q8_0.gguf';
             'gemma' = 'translategemma-4b-it\translategemma-4b-it.Q6_K.gguf' }
-$useLlm = $ggufs.ContainsKey($mt)
-if ($useLlm) { $gguf = Join-Path $models $ggufs[$mt] }
+$mt = Get-LastArg 'mt'
+if (-not $mt) { $mt = $env:VT_MT }
+if (-not $mt) { $mt = Get-LastArg 'mt-default' }
+if (-not $mt) { $mt = 'hymt7' }
+$gguf = $null
+if ($mt -like '*.gguf') {
+    $gguf = if ([IO.Path]::IsPathRooted($mt)) { $mt } else { Join-Path $root $mt }
+    $mtName = 'gguf'
+} else {
+    if ($ggufs.ContainsKey($mt)) { $gguf = Join-Path $models $ggufs[$mt] }
+    $mtName = $mt
+}
+$useLlm = [bool]$gguf
+$src = if ($env:VT_SOURCE_LANG) { $env:VT_SOURCE_LANG.ToLower() } else { 'uk' }
+$tgt = if ($env:VT_TARGET_LANG) { $env:VT_TARGET_LANG.ToLower() } else { 'en' }
+if ($mt -eq 'quickmt' -and -not (Test-Path (Join-Path $models "quickmt-$src-$tgt\model.bin"))) {
+    Write-Host ("Для пари $src→$tgt немає моделі quickmt (вони є лише з англійської та на англійську, і їх завантажує " +
+                "Download-Models.bat). Вкажіть інший перекладач у .env: VT_MT=hymt7, VT_MT=hymt1.8 або шлях до свого " +
+                "GGUF — див. README, «Мови».") -ForegroundColor Red
+    exit 1
+}
 
 if (-not (Test-Path $py)) {
     Write-Host 'Середовище ще не встановлено: спершу запустіть Install.bat, потім Download-Models.bat (див. README).' -ForegroundColor Red
@@ -36,8 +57,6 @@ if (-not (Test-Path $py)) {
 }
 # Only the models the chosen mode needs: voice size (--tts) and where recognition runs (--asr-device; auto = on the
 # GPU with quickmt, on the CPU with an LLM translator).
-# The last value wins (as in argparse): Start-VoiceTranslate-Game.bat --tts 1.7B overrides its own --tts 0.6B.
-function Get-LastArg([string]$name) { $all = [regex]::Matches($argline, "--$name\s+(\S+)"); if ($all.Count) { $all[$all.Count - 1].Groups[1].Value } }
 $tts = Get-LastArg 'tts'; if (-not $tts) { $tts = '1.7B' }
 $asrDev = Get-LastArg 'asr-device'; if (-not $asrDev -or $asrDev -eq 'auto') { $asrDev = if ($useLlm) { 'cpu' } else { 'cuda' } }
 $need = @(
@@ -50,8 +69,11 @@ if ($asrDev -eq 'cpu') { $need += Join-Path $models 'parakeet-ultra-int8\encoder
 else { $need += Join-Path $models 'parakeet-tdt-0.6b-v3-fp32\encoder.weights' }
 foreach ($f in $need) {
     if (-not (Test-Path $f)) {
-        $hint = if ($useLlm) { 'Download-Models.bat -Llm' } elseif ($tts -eq '0.6B') { 'Download-Models.bat -Small' } else { 'Download-Models.bat' }
-        Write-Host "Не знайдено: $f`nЗапустіть $hint (див. README)." -ForegroundColor Red
+        $hint = if ($f -eq $gguf -and $mtName -eq 'gguf') { 'Перевірте шлях VT_MT у .env' }
+                elseif ($f -eq $gguf -and $mt -eq 'hymt7') { 'Запустіть Download-Models.bat -Llm' }
+                elseif ($tts -eq '0.6B' -and $f -like '*0.6B*') { 'Запустіть Download-Models.bat -Small' }
+                else { 'Запустіть Download-Models.bat' }
+        Write-Host "Не знайдено: $f`n$hint (див. README)." -ForegroundColor Red
         exit 1
     }
 }
@@ -83,7 +105,7 @@ try {
         }
         $llamaArgs = @('-m', $gguf, '--host', '127.0.0.1', '--port', $port, '-ngl', $ngl, '-c', '1024',
                        '-fa', 'on', '-t', '6', '--jinja', '--no-webui')
-        Write-Host "Перекладач $mt ($($ggufs[$mt]), -ngl $ngl): http://127.0.0.1:$port"
+        Write-Host "Перекладач $(Split-Path -Leaf $gguf) (-ngl $ngl): http://127.0.0.1:$port"
         $llama = Start-Process -FilePath $server -PassThru -WindowStyle Hidden `
             -RedirectStandardOutput (Join-Path $root 'logs\llama-server.log') `
             -RedirectStandardError (Join-Path $root 'logs\llama-server.err.log') -ArgumentList $llamaArgs
@@ -101,7 +123,13 @@ try {
     $env:PYTHONUTF8 = '1'
     # --stream-test (from Start-StreamTest.bat) runs the text-only simultaneous translation test instead.
     $script = if ($args -contains '--stream-test') { 'stream_test.py' } else { 'voice_translate.py' }
-    $pass = @($args | Where-Object { $_ -ne '--stream-test' })
+    # The translator resolved above replaces every --mt / --mt-default (Python knows a custom GGUF as "gguf")
+    $pass = @()
+    for ($i = 0; $i -lt $args.Count; $i++) {
+        if ($args[$i] -in '--mt', '--mt-default') { $i++; continue }
+        if ($args[$i] -ne '--stream-test') { $pass += $args[$i] }
+    }
+    $pass += '--mt', $mtName
     if ($cable) {
         $prevMic = Get-DefaultMic
         if ($prevMic.Name -like '*CABLE*') { throw 'Мікрофон за замовчуванням уже «CABLE Output» — поверніть свій у налаштуваннях звуку Windows' }

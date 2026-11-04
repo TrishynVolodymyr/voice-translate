@@ -1,6 +1,7 @@
 ﻿# Downloads the models into models\ (or VT_MODELS_DIR) and checks SHA-256 of every file.
 # Hugging Face caches go to cache\ (deleted at the end); no account or token is needed — all models are public.
-#   Download-Models.ps1            core: recognition, translation (quickmt), voice 1.7B, voice activity detection (~8 GB)
+#   Download-Models.ps1            core: recognition, translation (quickmt for the pair in .env), voice 1.7B, voice
+#                                  activity detection (~8 GB); plus the translator set in VT_MT, if any
 #   Download-Models.ps1 -Llm       + Hy-MT2-7B translator and llama.cpp b12040 runtime (~5 GB; default of Start-VoiceTranslate.bat)
 #   Download-Models.ps1 -Small     + Qwen3-TTS 0.6B voice (~2.4 GB; less VRAM, less natural)
 #   Download-Models.ps1 -VoiceDesign  + Qwen3-TTS VoiceDesign (~4.2 GB; only to create a voice from a text description)
@@ -57,15 +58,23 @@ $hasQm = $true
 try { Invoke-RestMethod "https://huggingface.co/api/models/quickmt/$qm" | Out-Null } catch { $hasQm = $false }
 if ($hasQm) {
     Get-HF "quickmt/$qm" $qm @('config.json', 'model.bin', 'source_vocabulary.json', 'target_vocabulary.json', 'src.spm.model', 'tgt.spm.model', 'README.md')
-} else {
-    Write-Host "Для пари $src→$tgt немає моделі quickmt — перекладатиме Hy-MT2-7B (Download-Models.bat -Llm, Start-VoiceTranslate.bat)." -ForegroundColor Yellow
+} elseif (-not $env:VT_MT -or $env:VT_MT -eq 'quickmt') {
+    Write-Host ("Для пари $src→$tgt немає моделі quickmt. Вкажіть перекладач у .env — VT_MT=hymt7, VT_MT=hymt1.8 або " +
+                "шлях до свого GGUF — і запустіть Download-Models.bat ще раз (див. README, «Мови»).") -ForegroundColor Yellow
 }
 Get-HF 'Qwen/Qwen3-TTS-12Hz-1.7B-Base' 'Qwen3-TTS-12Hz-1.7B-Base' @()
 
 if ($Small) { Get-HF 'Qwen/Qwen3-TTS-12Hz-0.6B-Base' 'Qwen3-TTS-12Hz-0.6B-Base' @() }
 if ($VoiceDesign) { Get-HF 'Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign' 'Qwen3-TTS-12Hz-1.7B-VoiceDesign' @() }
-if ($Llm) {
-    Get-HF 'tencent/Hy-MT2-7B-GGUF' 'hy-mt2' @('Hy-MT2-7B-Q4_K_M.gguf')
+# Translator from VT_MT (.env): hymt7 (also -Llm), hymt1.8, or your own GGUF — that one only needs the runtime.
+$mtSet = "$env:VT_MT"
+if ($Llm -or $mtSet -eq 'hymt7') { Get-HF 'tencent/Hy-MT2-7B-GGUF' 'hy-mt2' @('Hy-MT2-7B-Q4_K_M.gguf') }
+if ($mtSet -eq 'hymt1.8') { Get-HF 'tencent/Hy-MT2-1.8B-GGUF' 'hy-mt2' @('Hy-MT2-1.8B-Q8_0.gguf') }
+if ($mtSet -like '*.gguf') {
+    $own = if ([IO.Path]::IsPathRooted($mtSet)) { $mtSet } else { Join-Path $root $mtSet }
+    if (-not (Test-Path $own)) { Write-Host "VT_MT: файл $own не знайдено — покладіть свій GGUF туди або виправте шлях." -ForegroundColor Yellow }
+}
+if ($Llm -or $mtSet -in 'hymt7', 'hymt1.8' -or $mtSet -like '*.gguf') {
     $rt = Join-Path $root 'runtime'
     if (-not (Test-Path (Join-Path $rt 'llama-server.exe'))) {
         $dl = Join-Path $root 'downloads'

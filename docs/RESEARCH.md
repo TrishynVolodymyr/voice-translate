@@ -171,7 +171,7 @@ roughly linearly with phrase length: a 36 s monologue took 1.8 s to recognize, 1
 |---|---|---|---|
 | quickmt (CPU) + voice 0.6B | 3.0 GB | ~7.6 GB | lightest, next to games |
 | quickmt (CPU) + voice 1.7B | 4.9 GB | ~5.7 GB | calls / games |
-| Hy-MT2-1.8B + voice 1.7B | ≈7.1 GB (estimate) | ≈3.4 GB | quality ≈ quickmt, not used |
+| Hy-MT2-1.8B + voice 1.7B, recognition on CPU | ~7.0 GB (measured 2026-11-04) | ~4 GB | quality ≈ quickmt; `VT_MT=hymt1.8` for pairs quickmt lacks (0.1 s per phrase; on the CPU 0.65–0.9 s) |
 | TranslateGemma-4B + voice 1.7B | 8.4 GB | ~1.5 GB | not used (numbers) |
 | Hy-MT2-7B (all layers) + voice 1.7B, recognition on CPU | 9.6 GB, peak 9.8 | ~0.75 GB at peak | most accurate, tight |
 | Hy-MT2-30B-A3B experts in RAM + voice 1.7B, recognition on CPU | 7.9 GB for the whole card | ~4.4 GB | 7B quality, too slow |

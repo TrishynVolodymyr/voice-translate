@@ -19,7 +19,7 @@ from pynput import keyboard
 
 sys.path.insert(0, str(Path(__file__).parent))
 from pipeline import (ASR, LOGS, SRC_NAME, TGT_NAME, TRANSLATORS, TTS, VOICES, HybridASR, Timer,  # noqa: E402
-                      check_languages, device_arg, env, output_players, resample)
+                      check_languages, device_arg, env, mt_label, output_players, resample)
 
 MIC_SR = 48000
 
@@ -45,7 +45,7 @@ def main() -> None:
                     help="auto — Parakeet Ultra на процесорі (точніша за v3: 7,7–8,3%% проти 9,4–12,2%% на голосі користувача), Parakeet v3 fp32 на відеокарті; parakeet / ultra — примусово; hybrid — Parakeet + запасна NeMo-uk")
     ap.add_argument("--mt", default="hymt7", choices=list(TRANSLATORS),
                     help="hymt7 — Hy-MT2-7B (найточніший); hymt1.8 — Hy-MT2-1.8B; gemma — TranslateGemma-4B; "
-                         "quickmt — найшвидший, буквальний")
+                         "quickmt — найшвидший, буквальний; gguf — свій GGUF з VT_MT (сервер запускає Start-скрипт)")
     ap.add_argument("--asr-device", default="auto", choices=["auto", "cpu", "cuda"],
                     help="auto — на відеокарті з quickmt (перекладач на процесорі), на процесорі з Hy-MT2/Gemma (їм потрібна відеопам'ять); cuda — Parakeet fp32 і quickmt на GPU, +4,5 ГБ VRAM, не гальмує від зайнятого процесора")
     ap.add_argument("--ngl", default="999", help="шарів перекладача на GPU (обробляє Start-скрипт)")
@@ -166,7 +166,7 @@ def main() -> None:
     threading.Thread(target=wait_for_quit, daemon=True).start()
     with sd.InputStream(samplerate=MIC_SR, channels=1, dtype="float32", callback=mic_cb, device=device_arg(a.mic, "input")):
         print(f"\nГотово. Тримайте [{a.key}] і говоріть ({SRC_NAME}); відпустіть — почуєте переклад ({TGT_NAME}).\n"
-              f"Голос: Qwen3-TTS {a.tts}, зразок {ref.name}, режим {a.mode}; переклад: {a.mt}.\n"
+              f"Голос: Qwen3-TTS {a.tts}, зразок {ref.name}, режим {a.mode}; переклад: {mt_label(a.mt)}.\n"
               f"Вихід: q + Enter (або Ctrl+C).\n", flush=True)
         with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
             # Polling instead of listener.join(): a blocking join never lets Ctrl+C through on Windows.

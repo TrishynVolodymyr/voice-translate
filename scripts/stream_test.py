@@ -18,7 +18,7 @@ import numpy as np
 import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).parent))
-from pipeline import LOGS, TTS, VOICES, check_languages, device_arg, env, output_players, resample  # noqa: E402
+from pipeline import LOGS, SRC, TTS, VOICES, check_languages, device_arg, env, output_players, resample  # noqa: E402
 from stream_core import SR, HyMTPrefix, QuickMTPrefix, Segmenter, Speaker, StreamingASR, StreamingMT  # noqa: E402
 
 CHUNK = 0.1  # seconds of audio per producer chunk
@@ -86,7 +86,8 @@ def voice_summary(speaker, segments, inp, out):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mt", default="quickmt", choices=["quickmt", "hymt7"])
+    ap.add_argument("--mt", default="quickmt", choices=["quickmt", "hymt7", "hymt1.8", "gguf"],
+                    help="перекладач; hymt* і gguf — через llama-server, який запускає Start-скрипт")
     ap.add_argument("--wav", nargs="*", help="файли або 'phrases' (20 тестових фраз поспіль)")
     # 0.5, not 0.25: two passes only 0.25 s apart agree on wrong words more easily — on the user's live test the
     # translation diverged from the whole-utterance one by 26% instead of 20%, for a 0.25 s faster start (2026-11-02).
@@ -198,7 +199,7 @@ def main():
         segments.append({"start": round(seg_start, 2), "speech_end": round(clock, 2), "done": round(done, 2),
                          "uk": uk, "en": " ".join(mt.spoken), "forced": forced, "asr_passes": asr.passes,
                          "uk_model": asr.use_uk})
-        print(f"\n   UA: {uk}", flush=True)
+        print(f"\n   {SRC.upper()}: {uk}", flush=True)
         print_timing(done)
         uk_cut = []
         asr.reset()
@@ -211,7 +212,7 @@ def main():
         f = lambda x: f"{x:.1f} с".replace(".", ",") if x is not None else "—"  # noqa: E731
         st = steps[seg_step0:]
         voice = [e for e in (speaker.log if speaker else []) if e["seg"] == len(segments) - 1]
-        parts = [f"слово підтверджено {f(seg_times.get('stable'))}", f"англ. текст {f(seg_times.get('en'))}"]
+        parts = [f"слово підтверджено {f(seg_times.get('stable'))}", f"переклад {f(seg_times.get('en'))}"]
         if speaker:
             parts.append(f"голос почав {f(voice[0]['play_start'] - seg_start)}" if voice else "голос почне після паузи")
         parts.append(f"кінець перекладу через {f(done - clock)} після паузи")
