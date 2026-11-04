@@ -236,7 +236,8 @@ there; the reason it should work is given next to it.
    it does not: the voice then becomes 8–20× slower than real time while the game keeps its FPS. With a GGUF translator
    set `VT_MT_NGL=0`; if the voice stutters in heavy scenes, add `--tts 0.6B`. To experiment: `VT_TTS_PACE=1.5` makes
    the voice take the GPU in smaller bursts (not yet measured in a game). Capping the game's FPS leaves the voice more GPU
-   time. Games use the default microphone automatically; otherwise Windows Settings → System → Sound → Volume mixer → the
+   time: in Path of Exile 2 with a 72 FPS cap and dynamic resolution on, the game stayed at 72 FPS with and without the
+   translation (observed, not measured). Games use the default microphone automatically; otherwise Windows Settings → System → Sound → Volume mixer → the
    game → Input device = «CABLE Output», or Steam → Settings → Voice → Recording device.
 
 Your own voice is not heard there — only the translated one. Checked with Discord and Telegram voice messages.
@@ -266,7 +267,7 @@ Your own voice is not heard there — only the translated one. Checked with Disc
 | Simultaneous: start of a phrase → first sound of the translation | ~2.5–3.5 s on live speech |
 | Recognition errors on one speaker (40 phrases) | ~8% WER (Parakeet v3 fp32 on GPU / Parakeet Ultra on CPU) |
 | CPU use | push-to-talk: busy only while a phrase is processed (~0.2–0.4 s); simultaneous mode: ~2–3% (recognition on the GPU) |
-| In Path of Exile 2 (recognition and quickmt on the CPU) | first sound 0.6–1.0 s after release (1.7B voice; 0.6B: 0.55–1.3 s); game 80–90 FPS while speaking (130–145 without) |
+| In Path of Exile 2 (recognition and quickmt on the CPU) | first sound 0.6–1.0 s after release (1.7B voice; 0.6B: 0.55–1.3 s); game 80–90 FPS while speaking (130–145 without); with a 72 FPS cap and dynamic resolution: steady 72 (observed) |
 
 Translation quality: Hy-MT2-7B is the most accurate (times, numbers, negation, uses the previous phrases as context);
 quickmt is literal but ~30 ms per phrase.

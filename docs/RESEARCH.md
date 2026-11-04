@@ -305,9 +305,11 @@ without the voice).
 | Full mode (~8.5 GB) next to the game | 8–20× **slower** than real time (VRAM overflow, the game keeps priority) | — | game keeps its FPS |
 | Recognition and quickmt on the CPU (today's default), voice 1.7B | 1.07–1.10× faster | 0.6–1.0 s | 80–90 (130–145 without) |
 | The same, voice 0.6B (`--tts 0.6B`) | 1.1–1.3× faster | 0.55–1.3 s | 80–90 (130–145 without) |
+| The same, voice 1.7B; game in Windowed Fullscreen, capped at 72 FPS, dynamic resolution on | — | ~1.0–1.4 s on long phrases (with OBS / Game Bar recording) | 72 with and without the translation (observed on the in-game counter, not logged) |
 
 This setup runs recognition and translation on the CPU and only the voice on the GPU; measured without heavy
-effects. Headroom is small (1.07–1.3×); buffering a whole phrase when generation falls below real time is in the
+effects. The last row shows the cheap fix for the FPS drop: with a frame cap the GPU has spare time for the voice, and
+dynamic resolution absorbs what is left by rendering slightly softer instead of dropping frames. Headroom is small (1.07–1.3×); buffering a whole phrase when generation falls below real time is in the
 roadmap; the voice pace limit (§3) is available as `VT_TTS_PACE`, its effect in a game is not measured yet.
 
 ## 7. What exists elsewhere and why we did not use it (as of November 2026)
