@@ -1,6 +1,6 @@
 # Roadmap: towards real simultaneous translation
 
-Push-to-talk works well (~0.6–0.7 s from releasing the key to the translated speech). The simultaneous mode
+Push-to-talk works well (~0.6–0.8 s from releasing the key to the translated speech). The simultaneous mode
 (`Start-StreamVoice.bat`) is a working prototype. Below is what is still unsatisfying, what we measured, and what we would
 try next. Numbers are from Ukrainian → English, an RTX 4070 12 GB and one speaker's live tests.
 

@@ -12,7 +12,7 @@ Italian, Portuguese, Russian, Chinese, Japanese, Korean. See [Languages](#langua
 
 ## What it can do
 
-- **Push-to-talk translation** — hold Right Ctrl, speak, release: the translation starts **~0.6–0.7 s after you release
+- **Push-to-talk translation** — hold Right Ctrl, speak, release: the translation starts **~0.6–0.8 s after you release
   the key** (measured on an RTX 4070). The whole phrase is translated at once, so quality is best here.
 - **Your voice, without your accent** — the voice is cloned from a ~30 s recording of you speaking your own language;
   only the timbre is taken, the pronunciation of the other language comes from the model.
@@ -48,8 +48,8 @@ speaks clause-sized pieces as they become stable.
 ## Requirements
 
 - **Windows 10/11, 64-bit** (Windows only).
-- **NVIDIA GPU with 12 GB VRAM** and a recent driver that supports CUDA 12.8. The default modes use ~8.5–9.6 GB; on an
-  8 GB card start them with `--tts 0.6B` or `--asr-device cpu` (expected to fit, not tested).
+- **NVIDIA GPU with 12 GB VRAM** and a recent driver that supports CUDA 12.8. Push-to-talk with quickmt uses ~5 GB, with
+  Hy-MT2-7B ~9.6 GB, the simultaneous mode ~8.5 GB; on an 8 GB card the quickmt launchers should fit (not tested).
 - **~25 GB of free disk space**: environment ~6 GB, core models ~8 GB, optional models up to ~12 GB more.
 - A microphone; **headphones** (in simultaneous mode the microphone must not hear the translated voice).
 - Internet for the installation only. No accounts or tokens are needed.
@@ -105,9 +105,9 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 
 | File | Mode | Voice goes to | VRAM (app) |
 |---|---|---|---|
-| `Start-VoiceTranslate-QuickMT.bat` | push-to-talk, fast translator (quickmt) | headphones | ~8.5 GB |
+| `Start-VoiceTranslate-QuickMT.bat` | push-to-talk, fast translator (quickmt) | headphones | ~5 GB |
 | `Start-VoiceTranslate.bat` | push-to-talk, most accurate translator (Hy-MT2-7B; needs `-Llm`) | headphones | ~9.6 GB |
-| **`Start-VoiceTranslate-Cable.bat`** | push-to-talk (quickmt) **for Discord and calls** | headphones + virtual mic | ~8.5 GB |
+| **`Start-VoiceTranslate-Cable.bat`** | push-to-talk (quickmt) **for Discord and calls** | headphones + virtual mic | ~5 GB |
 | **`Start-VoiceTranslate-Game.bat`** | push-to-talk **next to a demanding game**: recognition and translation on the CPU, 1.7B voice on the GPU (`--tts 0.6B`: lighter, needs `-Small`) | headphones + virtual mic | ~5 GB (0.6B: ~3 GB) |
 | `Start-StreamVoice.bat` | simultaneous, no key (experimental) | headphones | ~8.5 GB |
 | `Start-StreamTest.bat` / `Start-StreamTest-CPU.bat` | simultaneous, translated text only | screen | ~3.8 GB / 0 |
@@ -119,13 +119,13 @@ Launchers accept arguments, e.g. from PowerShell: `.\Start-VoiceTranslate.bat --
 
 | Argument | Meaning |
 |---|---|
-| `--ref NAME` | voice sample from `voices\` (default `ref_uk`) or a path to a WAV |
+| `--ref NAME` | voice sample from `voices\` (default `ref_<VT_SOURCE_LANG>`, e.g. `ref_uk`) or a path to a WAV |
 | `--tts 1.7B` / `0.6B` | voice model size (0.6B: −2 GB VRAM, less natural) |
 | `--mt quickmt` / `hymt7` | translator: fast and literal / most accurate (needs `-Llm`) |
 | `--cable` | also send the voice into the VB-CABLE virtual microphone |
 | `--key ctrl_r` | push-to-talk key (pynput names: `alt_r`, `f9`, `x`…) |
 | `--mic NAME`, `--out NAME` | microphone / output device (part of its name or its number; `Record-Samples.bat --list`) |
-| `--asr-device cpu` | recognition on the CPU (frees ~3.4 GB VRAM, sensitive to CPU load) |
+| `--asr-device cuda` / `cpu` | where recognition (and quickmt) runs; also `VT_ASR_DEVICE` in `.env`. Push-to-talk uses the CPU (more accurate Parakeet Ultra, ~0.15 s slower than the GPU, which would take ~3.5 GB more); the simultaneous mode uses the GPU (a busy CPU cannot keep up with it) |
 
 In simultaneous mode **Right Ctrl** means "be quiet": the voice drops everything it has not said yet.
 
@@ -195,12 +195,14 @@ microphone and output, voice sample, push-to-talk key, llama.cpp port. `.env` st
 2. If you installed it by hand, check Windows sound settings and choose your own microphone and speakers again, or from
    PowerShell: `. .\scripts\AudioDefault.ps1; Get-Mics; Set-DefaultMic 'your mic'; Get-Speakers; Set-DefaultSpeaker 'your headphones'`.
 3. Run **`Start-VoiceTranslate-Cable.bat`**. While it runs, «CABLE Output» is the default microphone; quit with
-   `q` + Enter and your microphone is restored (if you close the window with ×, it is restored on the next start).
+   `q` + Enter, or simply close the window: your microphone is restored either way (a small hidden helper waits for
+   the window to close).
 4. **Discord:** Settings → Voice & Video → Input device = «CABLE Output». Voice activity mode works: the cable is
    silent while the voice is silent.
-5. **Games:** use **`Start-VoiceTranslate-Game.bat`** — the full mode (~8.5 GB) does not fit next to a demanding game in
-   12 GB, and then the voice becomes 8–20× slower than real time while the game keeps its FPS. The game mode
-   (recognition and translation on the CPU, only the voice on the GPU) fits; if the voice stutters in heavy scenes, add
+5. **Games:** use **`Start-VoiceTranslate-Game.bat`** — like the Cable one (recognition and quickmt on the CPU, only
+   the voice on the GPU, ~5 GB), and a GGUF translator also runs on the CPU there. With recognition or a big translator
+   on the GPU (~8.5–9.6 GB) it does not fit next to a demanding game in 12 GB: the voice then becomes 8–20× slower than
+   real time while the game keeps its FPS. The game mode fits; if the voice stutters in heavy scenes, add
    `--tts 0.6B`. Capping the game's FPS leaves the voice more GPU
    time. Games use the default microphone automatically; otherwise Windows Settings → System → Sound → Volume mixer → the
    game → Input device = «CABLE Output», or Steam → Settings → Voice → Recording device.
@@ -222,10 +224,10 @@ Your own voice is not heard there — only the translated one. Checked with Disc
 
 | What | Result |
 |---|---|
-| Push-to-talk: key released → first sound of the translation | ~0.6–0.7 s (quickmt), ~0.65 s (Hy-MT2-7B) |
+| Push-to-talk: key released → first sound of the translation | ~0.6 s median, up to ~1.1 s (quickmt, recognition on the CPU; 20 phrases of 2.5–6.4 s); ~0.45 s with `VT_ASR_DEVICE=cuda`; ~0.65 s with Hy-MT2-7B |
 | Simultaneous: start of a phrase → first sound of the translation | ~2.5–3.5 s on live speech |
 | Recognition errors on one speaker (40 phrases) | ~8% WER (Parakeet v3 fp32 on GPU / Parakeet Ultra on CPU) |
-| CPU use while translating | ~2–3% (recognition and translation on the GPU) |
+| CPU use | push-to-talk: busy only while a phrase is processed (~0.2–0.4 s); simultaneous mode: ~2–3% (recognition on the GPU) |
 | In Path of Exile 2 (`Start-VoiceTranslate-Game.bat`) | first sound 0.6–1.0 s after release (1.7B voice; 0.6B: 0.55–1.3 s); game 80–90 FPS while speaking (130–145 without) |
 
 Translation quality: Hy-MT2-7B is the most accurate (times, numbers, negation, uses the previous phrases as context);

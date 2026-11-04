@@ -47,8 +47,9 @@ def main() -> None:
     ap.add_argument("--mt", default="hymt7", choices=list(TRANSLATORS),
                     help="hymt7 — Hy-MT2-7B (найточніший); hymt1.8 — Hy-MT2-1.8B; gemma — TranslateGemma-4B; "
                          "quickmt — найшвидший, буквальний; gguf — свій GGUF з VT_MT (сервер запускає Start-скрипт)")
-    ap.add_argument("--asr-device", default="auto", choices=["auto", "cpu", "cuda"],
-                    help="auto — на відеокарті з quickmt (перекладач на процесорі), на процесорі з Hy-MT2/Gemma (їм потрібна відеопам'ять); cuda — Parakeet fp32 і quickmt на GPU, +4,5 ГБ VRAM, не гальмує від зайнятого процесора")
+    ap.add_argument("--asr-device", default=env("VT_ASR_DEVICE", "auto"), choices=["auto", "cpu", "cuda"],
+                    help="auto — процесор (Parakeet Ultra точніший, відеокарта економила лише ~0,15 с на фразу); "
+                         "cuda — Parakeet fp32 і quickmt на GPU, +3,5 ГБ VRAM, не гальмує від зайнятого процесора")
     ap.add_argument("--ngl", default="999", help="шарів перекладача на GPU (обробляє Start-скрипт)")
     a = ap.parse_args()
 
@@ -61,7 +62,7 @@ def main() -> None:
     outdir.mkdir(parents=True, exist_ok=True)
 
     check_languages(a.mt, a.asr)
-    dev = a.asr_device if a.asr_device != "auto" else ("cuda" if a.mt == "quickmt" else "cpu")
+    dev = a.asr_device if a.asr_device != "auto" else "cpu"
     # ASR before TTS: once torch has started CUDA, sherpa-onnx fails to load its CUDA provider (DLL error 1114) and
     # silently falls back to the CPU (2026-11-02).
     kind = a.asr if a.asr != "auto" else ("ultra" if dev == "cpu" else "parakeet")

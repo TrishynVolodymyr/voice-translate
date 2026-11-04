@@ -60,10 +60,16 @@ if (-not (Test-Path $py)) {
     Write-Host 'Середовище ще не встановлено: спершу запустіть Install.bat, потім Download-Models.bat (див. README).' -ForegroundColor Red
     exit 1
 }
-# Only the models the chosen mode needs: voice size (--tts) and where recognition runs (--asr-device; auto = on the
-# GPU with quickmt, on the CPU with an LLM translator).
+# Only the models the chosen mode needs: voice size (--tts) and where recognition runs.
+# Recognition (and quickmt, which follows it): --asr-device typed by the user > VT_ASR_DEVICE in .env > auto.
+# auto: push-to-talk on the CPU — Parakeet Ultra there is more accurate, the GPU saved only ~0.15 s per phrase
+# (20 phrases: 0.61 vs 0.43 s to the first sound) and took ~3.5 GB of VRAM; the simultaneous mode re-reads the phrase
+# every 0.5 s, which a busy CPU cannot keep up with, so there it stays on the GPU with quickmt.
 $tts = Get-LastArg 'tts'; if (-not $tts) { $tts = '1.7B' }
-$asrDev = Get-LastArg 'asr-device'; if (-not $asrDev -or $asrDev -eq 'auto') { $asrDev = if ($useLlm) { 'cpu' } else { 'cuda' } }
+$stream = $args -contains '--stream-test'
+$asrDev = Get-LastArg 'asr-device'
+if (-not $asrDev -or $asrDev -eq 'auto') { $asrDev = $env:VT_ASR_DEVICE }
+if (-not $asrDev -or $asrDev -eq 'auto') { $asrDev = if ($stream -and -not $useLlm) { 'cuda' } else { 'cpu' } }
 $need = @(
     (Join-Path $models 'silero-vad\silero_vad.onnx'),
     (Join-Path $models "Qwen3-TTS-12Hz-$tts-Base\model.safetensors")
@@ -91,7 +97,8 @@ Get-CimInstance Win32_Process -Filter "Name='llama-server.exe'" |
 
 # --cable (Start-VoiceTranslate-Cable.bat): the voice also goes into VB-CABLE, and while the translator runs the
 # Windows default microphone is «CABLE Output», so games that cannot choose a microphone hear the translated voice.
-# The previous default is restored on exit; if the window was closed with X, on the next start (logs\default-mic.txt).
+# The previous default is restored on exit (q + Enter); if the window is closed with X or Ctrl+C kills this script, a
+# hidden watcher restores it once this process is gone; failing that, the next start does (logs\default-mic.txt).
 $cable = $args -contains '--cable'
 $micState = Join-Path $root 'logs\default-mic.txt'
 $prevMic = $null
@@ -135,14 +142,23 @@ try {
     # The translator and -ngl resolved above replace every --mt / --ngl given (Python knows a custom GGUF as "gguf")
     $pass = @()
     for ($i = 0; $i -lt $args.Count; $i++) {
-        if ($args[$i] -in '--mt', '--mt-default', '--ngl', '--ngl-default') { $i++; continue }
+        if ($args[$i] -in '--mt', '--mt-default', '--ngl', '--ngl-default', '--asr-device') { $i++; continue }
         if ($args[$i] -ne '--stream-test') { $pass += $args[$i] }
     }
-    $pass += '--mt', $mtName, '--ngl', $ngl  # resolved values, so Python can show where the translator runs
+    # resolved values, so Python runs and shows exactly what was checked here
+    $pass += '--mt', $mtName, '--ngl', $ngl, '--asr-device', $asrDev
     if ($cable) {
         $prevMic = Get-DefaultMic
         if ($prevMic.Name -like '*CABLE*') { throw 'Мікрофон за замовчуванням уже «CABLE Output» — поверніть свій у налаштуваннях звуку Windows' }
         Set-Content -Path $micState -Value $prevMic.Id -Encoding ascii
+        # The watcher runs in its own hidden console, so closing this window does not kill it. It waits for this
+        # PowerShell process to end and restores the microphone if the state file is still there (q + Enter removes
+        # it in `finally` first, so then it does nothing).
+        $watch = "`$p = Get-Process -Id $PID -ErrorAction SilentlyContinue; if (`$p) { `$p.WaitForExit() }; " +
+                 "`$s = '$($micState -replace "'", "''")'; if (Test-Path `$s) { . '$((Join-Path $PSScriptRoot 'AudioDefault.ps1') -replace "'", "''")'; " +
+                 "[VT.AudioDevices2]::SetDefault((Get-Content `$s -Raw).Trim()); Remove-Item `$s }"
+        Start-Process powershell -WindowStyle Hidden -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-EncodedCommand', [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($watch)))
         Set-DefaultMic 'CABLE Output' | Out-Null
         Write-Host "Мікрофон за замовчуванням тепер «CABLE Output» (для ігор); перекладач слухає «$($prevMic.Name)»."
         Write-Host 'Виходьте через q + Enter — тоді Windows одразу поверне ваш мікрофон.'
