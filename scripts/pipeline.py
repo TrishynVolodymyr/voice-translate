@@ -160,7 +160,7 @@ class HybridASR:
 
 
 class MT:
-    # CPU by default so it takes no VRAM: with the end-of-source token it is 40–80 ms per phrase on a 6-core Ryzen vs
+    # CPU by default so it takes no VRAM: with the end-of-source token it is 40–80 ms per phrase on a Ryzen 5 7500F (6 cores) vs
     # ~30 ms on the GPU (2026-11-02). The earlier "1–2 s on CPU" was the missing </s> making it decode to max length.
     # 1 thread: when other programs load every core, OpenMP threads wait for each other — 6 threads once took 86 s for a
     # phrase (2026-11-02), and 2 threads still stalled (40 phrases on a 100% busy CPU: median 1.3 s, max 23 s) while

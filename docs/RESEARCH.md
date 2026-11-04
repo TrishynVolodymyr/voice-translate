@@ -2,10 +2,11 @@
 
 [Українська версія](RESEARCH.uk.md) · [README](../README.md) · [Roadmap](../ROADMAP.md)
 
-> All measurements were made on one PC (Windows 11, RTX 4070 12 GB, 6-core Ryzen 5) with one speaker's voice: the
-> 20 standard test phrases from `Record-Samples.bat`, recorded twice (40 recordings, 181 words per take), plus live
-> sessions. Dates: November 2026. The numbers are indicative, not benchmarks: small sets, one voice, one machine, and
-> some runs were made while other programs were using the CPU.
+> All measurements were made on one PC — Windows 11, NVIDIA RTX 4070 12 GB (driver 621.01), AMD Ryzen 5 7500F
+> (6 cores / 12 threads), 96 GB DDR5 — with one speaker's voice: the 20 standard test phrases from
+> `Record-Samples.bat`, recorded twice (40 recordings, 181 words per take), plus live sessions. Dates: November 2026.
+> The numbers are indicative, not benchmarks: small sets, one voice, one machine, and some runs were made while other
+> programs were using the CPU.
 
 Terms used below. **WER**: word error rate against the known text, ignoring case and punctuation. **Take A / take B**:
 the two recordings of the 20 phrases (take B: closer to the microphone, cardioid pattern, fewer hesitations; noise was

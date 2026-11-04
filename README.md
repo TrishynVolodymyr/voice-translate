@@ -54,8 +54,9 @@ speaks clause-sized pieces as they become stable.
 - A microphone; **headphones** (in simultaneous mode the microphone must not hear the translated voice).
 - Internet for the installation only. No accounts or tokens are needed.
 
-**Tested on** one PC so far: Windows 11, RTX 4070 12 GB, Ryzen 5 — including a from-scratch install of a
-fresh clone. Windows 10, other GPUs and 8 GB cards are expected to work but have not been tried; reports are welcome.
+**Tested on** one PC so far: Windows 11, NVIDIA RTX 4070 12 GB (driver 621.01), AMD Ryzen 5 7500F (6 cores /
+12 threads), 96 GB DDR5 — including a from-scratch install of a fresh clone. Windows 10, other GPUs and 8 GB cards are
+expected to work but have not been tried; reports are welcome.
 
 ## Installation
 
@@ -187,7 +188,7 @@ default. `.env` stays on your PC (it is git-ignored).
   «Де що працює» table: which model does what, on the CPU or the GPU. A setting that cannot work stops the start with
   a message saying what to fix.
 
-All of this was checked on one PC (Windows 11, RTX 4070 12 GB, Ryzen 5). "Not checked" below means we could not try it
+All of this was checked on one PC (Windows 11, RTX 4070 12 GB, Ryzen 5 7500F). "Not checked" below means we could not try it
 there; the reason it should work is given next to it.
 
 | Variable | What it sets | Empty = | Checked |
@@ -195,7 +196,7 @@ there; the reason it should work is given next to it.
 | `VT_SOURCE_LANG`, `VT_TARGET_LANG` | language pair, ISO codes ([Languages](#languages)) | `uk`, `en` | Ukrainian → English in depth (every number here); Ukrainian → German, Ukrainian → French, English → German briefly (translation and voice). Other pairs not checked — the models list these languages; a language recognition or the voice does not know stops the start, one missing from Hy-MT2's list gets a warning. |
 | `VT_MT` | translator ([Translator](#translator)) | quickmt | quickmt, `hymt7`, `hymt1.8`, and a GGUF given by its path. Not checked: someone else's fine-tune — it gets the same prompt through its own chat template, as the GGUF test did. |
 | `VT_MT_NGL` | layers of a GGUF translator on the GPU | all | `0`, `10`, `999` (Hy-MT2-1.8B with the 1.7B voice: 6.5 / 7.2 / 8.4 GB VRAM for the whole card) |
-| `VT_ASR_DEVICE` | where recognition and quickmt run: `cpu` / `cuda` | push-to-talk: CPU; simultaneous: GPU | both, with timings ([Performance](#performance-ukrainian--english-rtx-4070-12-gb-ryzen-5-measured)) |
+| `VT_ASR_DEVICE` | where recognition and quickmt run: `cpu` / `cuda` | push-to-talk: CPU; simultaneous: GPU | both, with timings ([Performance](#performance-ukrainian--english-rtx-4070-12-gb-ryzen-5-7500f-measured)) |
 | `VT_CABLE` | virtual microphone; `0` = off | on when the cable is found | found by itself; `0` keeps it off; your microphone comes back after `q` + Enter and after closing the window |
 | `VT_CABLE_PLAY`, `VT_CABLE_MIC` | another virtual cable: where the voice is played / the microphone others hear | VB-CABLE | Not checked — only VB-CABLE was installed. The same lookup by part of the name finds VB-CABLE; a name it cannot find is reported at start, and the voice then stays in your headphones. |
 | `VT_MODELS_DIR`, `VT_VOICES_DIR`, `VT_LOGS_DIR` | folders, relative to this one or absolute | `models`, `voices`, `logs` | `VT_VOICES_DIR` in another folder. Others not checked — all scripts read them through the same code. The launcher's own files (llama.cpp log, saved microphone) always stay in `logs\`. |
@@ -244,7 +245,7 @@ Your own voice is not heard there — only the translated one. Checked with Disc
 - **The voice sounds cut or robotic in a call** — try turning off the app's noise suppression (Krisp in Discord), echo
   cancellation and automatic gain: they are made for live microphones, not for synthesized speech.
 
-## Performance (Ukrainian → English, RTX 4070 12 GB, Ryzen 5, measured)
+## Performance (Ukrainian → English, RTX 4070 12 GB, Ryzen 5 7500F, measured)
 
 | What | Result |
 |---|---|
