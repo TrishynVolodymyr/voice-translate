@@ -102,7 +102,8 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
 |---|---|---|---|
 | `Start-VoiceTranslate-QuickMT.bat` | push-to-talk, fast translator (quickmt) | headphones | ~8.5 GB |
 | `Start-VoiceTranslate.bat` | push-to-talk, most accurate translator (Hy-MT2-7B; needs `-Llm`) | headphones | ~8.3 GB |
-| **`Start-VoiceTranslate-Cable.bat`** | push-to-talk (quickmt) **for Discord and games** | headphones + virtual mic | ~8.5 GB |
+| **`Start-VoiceTranslate-Cable.bat`** | push-to-talk (quickmt) **for Discord and calls** | headphones + virtual mic | ~8.5 GB |
+| **`Start-VoiceTranslate-Game.bat`** | push-to-talk, light mode **next to a demanding game** (needs `-Small`) | headphones + virtual mic | ~3 GB |
 | `Start-StreamVoice.bat` | simultaneous, no key (experimental) | headphones | ~8.5 GB |
 | `Start-StreamTest.bat` / `Start-StreamTest-CPU.bat` | simultaneous, English text only | screen | ~3.8 GB / 0 |
 | `Record-Samples.bat` | record your voice sample | — | — |
@@ -141,7 +142,10 @@ output, voice sample, push-to-talk key, llama.cpp port. `.env` stays on your PC 
    `q` + Enter and your microphone is restored (if you close the window with ×, it is restored on the next start).
 4. **Discord:** Settings → Voice & Video → Input device = «CABLE Output». Voice activity mode works: the cable is
    silent while the voice is silent.
-5. **Games** use the default microphone automatically; otherwise Windows Settings → System → Sound → Volume mixer → the
+5. **Games:** use **`Start-VoiceTranslate-Game.bat`** — the full mode (~8.5 GB) does not fit next to a demanding game in
+   12 GB, and then the voice becomes 8–20× slower than real time while the game keeps its FPS. The light mode (0.6B
+   voice on the GPU, recognition and translation on the CPU) fits. Capping the game's FPS leaves the voice more GPU
+   time. Games use the default microphone automatically; otherwise Windows Settings → System → Sound → Volume mixer → the
    game → Input device = «CABLE Output», or Steam → Settings → Voice → Recording device.
 
 Your own Ukrainian voice is not heard there — only the English one. Checked with Discord and Telegram voice messages.
@@ -165,6 +169,7 @@ Your own Ukrainian voice is not heard there — only the English one. Checked wi
 | Simultaneous: start of a phrase → first English sound | ~2.5–3.5 s on live speech |
 | Recognition errors on one speaker (40 phrases) | ~8% WER (Parakeet v3 fp32 on GPU / Parakeet Ultra on CPU) |
 | CPU use while translating | ~2–3% (recognition and translation on the GPU) |
+| In Path of Exile 2 (`Start-VoiceTranslate-Game.bat`) | first sound 0.55–1.3 s after release; game 80–90 FPS while speaking (130–145 without) |
 
 Translation quality: Hy-MT2-7B is the most accurate (times, numbers, negation, uses the previous phrases as context);
 quickmt is literal but ~30 ms per phrase.

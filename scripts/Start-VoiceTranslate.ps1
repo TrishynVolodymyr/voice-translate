@@ -34,16 +34,21 @@ if (-not (Test-Path $py)) {
     Write-Host 'Середовище ще не встановлено: спершу запустіть Install.bat, потім Download-Models.bat (див. README).' -ForegroundColor Red
     exit 1
 }
+# Only the models the chosen mode needs: voice size (--tts) and where recognition runs (--asr-device; auto = on the
+# GPU with quickmt, on the CPU with an LLM translator).
+$tts = if ($argline -match '--tts\s+(\S+)') { $Matches[1] } else { '1.7B' }
+$asrDev = if ($argline -match '--asr-device\s+(\S+)') { $Matches[1] } elseif ($useLlm) { 'cpu' } else { 'cuda' }
 $need = @(
     (Join-Path $models 'silero-vad\silero_vad.onnx'),
     (Join-Path $models 'quickmt-uk-en\model.bin'),
-    (Join-Path $models 'Qwen3-TTS-12Hz-1.7B-Base\model.safetensors')
+    (Join-Path $models "Qwen3-TTS-12Hz-$tts-Base\model.safetensors")
 )
-if ($useLlm) { $need += $server, $gguf, (Join-Path $models 'parakeet-ultra-int8\encoder.int8.onnx') }  # LLM => ASR on the CPU: Parakeet Ultra
-else { $need += Join-Path $models 'parakeet-tdt-0.6b-v3-fp32\encoder.weights' }  # quickmt => ASR on the GPU (--asr-device auto)
+if ($useLlm) { $need += $server, $gguf }
+if ($asrDev -eq 'cpu') { $need += Join-Path $models 'parakeet-ultra-int8\encoder.int8.onnx' }
+else { $need += Join-Path $models 'parakeet-tdt-0.6b-v3-fp32\encoder.weights' }
 foreach ($f in $need) {
     if (-not (Test-Path $f)) {
-        $hint = if ($useLlm) { 'Download-Models.bat -Llm' } else { 'Download-Models.bat' }
+        $hint = if ($useLlm) { 'Download-Models.bat -Llm' } elseif ($tts -eq '0.6B') { 'Download-Models.bat -Small' } else { 'Download-Models.bat' }
         Write-Host "Не знайдено: $f`nЗапустіть $hint (див. README)." -ForegroundColor Red
         exit 1
     }

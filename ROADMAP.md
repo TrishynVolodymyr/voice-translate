@@ -53,8 +53,13 @@ Half of it is the translator: offline translators change their translation of th
   untranslated, cap the translation length.
 
 ### Games and resources
+- Measured in Path of Exile 2: the full mode next to the game generated speech 8–20× slower than real time (VRAM
+  overflow, the game keeps priority); the light mode (`Start-VoiceTranslate-Game.bat`) speaks 1.1–1.3× faster than real
+  time, first sound 0.55–1.3 s, game 80–90 FPS (130–145 without).
+- [ ] The light mode has little headroom (1.1–1.3×): when generation falls below real time, buffer the whole phrase
+  and play it in one piece instead of stuttering.
 - [ ] TTS keeps the GPU busy ~88% of the time while speaking (~1/3 of its power): a duty-cycle limit (e.g. 70%) for
-  games, and measuring FPS impact.
+  games.
 - [ ] Less VRAM: fp16 Parakeet export (~1.2 GB instead of 2.4).
 - Tried and rejected: Hy-MT2-30B-A3B with experts in RAM (7B quality at ~1.9 GB VRAM, but 1.1–2.4 s per phrase);
   speculative decoding with a 1.8B draft (slower: experts in RAM make verification expensive).
