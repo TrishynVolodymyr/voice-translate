@@ -32,8 +32,8 @@ Half of it is the translator: offline translators change their translation of th
   passes: 32% divergence).
 
 ### Recognition
-- [ ] **Fine-tune Parakeet on the user's voice** — 1–2 h of speech with corrected transcripts (e.g. exported Telegram
-  voice messages + a "listen and fix" page); expected to fix systematic errors («не»→«на», «Та ні»→«Тані»).
+- [ ] **Fine-tune Parakeet on the user's voice** — 1–2 h of the user's own speech recorded for it, with corrected
+  transcripts (a "listen and fix" page); expected to fix systematic errors («не»→«на», «Та ні»→«Тані»).
 - [ ] **Language slips** — Parakeet sometimes writes Ukrainian speech in Russian or Polish («Обережно, за тим будинком» →
   «Obereżne za tym budynkiem»), more often on short partial passes. A Ukrainian-only fallback model (NeMo FastConformer
   uk) fixed this but was triggered by English words too (QuickMT, "in this spirit") and recognized worse — so it is off.
