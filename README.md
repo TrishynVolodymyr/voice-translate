@@ -4,6 +4,11 @@
 hold a key, say a phrase, and a moment later it is spoken in the other language with your cloned timbre (without an
 accent) — into your headphones and, through a virtual microphone, into Discord, games or any call. Nothing leaves your PC.
 
+[![Demo video: local recognition, translation and voice while playing Path of Exile 2](https://img.youtube.com/vi/ik81LURknx8/maxresdefault.jpg)](https://youtu.be/ik81LURknx8)
+
+*Demo video: push-to-talk while playing Path of Exile 2 — speech recognized, translated and voiced locally in the
+author's cloned voice (RTX 4070, Ryzen 5 7500F).*
+
 Out of the box it translates **Ukrainian → English**, the pair everything was tuned and measured on. **Other pairs are
 two lines in `.env`**: you can speak 25 European languages, and the voice speaks 10 — English, German, French, Spanish,
 Italian, Portuguese, Russian, Chinese, Japanese, Korean. See [Languages](#languages).
