@@ -176,8 +176,33 @@ words by spaces, so for Chinese, Japanese or Korean output use push-to-talk.
 
 ## Configuration (`.env`)
 
-Copy `.env.example` to `.env` to change defaults without arguments: language pair, model / voice / log folders, default
-microphone and output, voice sample, push-to-talk key, llama.cpp port. `.env` stays on your PC (it is git-ignored).
+Copy `.env.example` to `.env` next to the launchers and fill in only what you want to change — an empty value means the
+default. `.env` stays on your PC (it is git-ignored).
+
+- **When it is read:** by every launcher and by `Download-Models.bat`, on each start. After a change close the window
+  and start again; after changing the language pair or `VT_MT` run `Download-Models.bat` again — it fetches what the
+  new setting needs.
+- **Which value wins:** an argument typed after the launcher > a variable already set in Windows > `.env` > the default.
+- **Did it take effect?** At start the window shows the language pair (when it is not Ukrainian → English) and the
+  «Де що працює» table: which model does what, on the CPU or the GPU. A setting that cannot work stops the start with
+  a message saying what to fix.
+
+All of this was checked on one PC (Windows 11, RTX 4070 12 GB, Ryzen 5). "Not checked" below means we could not try it
+there; the reason it should work is given next to it.
+
+| Variable | What it sets | Empty = | Checked |
+|---|---|---|---|
+| `VT_SOURCE_LANG`, `VT_TARGET_LANG` | language pair, ISO codes ([Languages](#languages)) | `uk`, `en` | Ukrainian → English in depth (every number here); Ukrainian → German, Ukrainian → French, English → German briefly (translation and voice). Other pairs not checked — the models list these languages; a language recognition or the voice does not know stops the start, one missing from Hy-MT2's list gets a warning. |
+| `VT_MT` | translator ([Translator](#translator)) | quickmt | quickmt, `hymt7`, `hymt1.8`, and a GGUF given by its path. Not checked: someone else's fine-tune — it gets the same prompt through its own chat template, as the GGUF test did. |
+| `VT_MT_NGL` | layers of a GGUF translator on the GPU | all | `0`, `10`, `999` (Hy-MT2-1.8B with the 1.7B voice: 6.5 / 7.2 / 8.4 GB VRAM for the whole card) |
+| `VT_ASR_DEVICE` | where recognition and quickmt run: `cpu` / `cuda` | push-to-talk: CPU; simultaneous: GPU | both, with timings ([Performance](#performance-ukrainian--english-rtx-4070-12-gb-ryzen-5-measured)) |
+| `VT_CABLE` | virtual microphone; `0` = off | on when the cable is found | found by itself; `0` keeps it off; your microphone comes back after `q` + Enter and after closing the window |
+| `VT_CABLE_PLAY`, `VT_CABLE_MIC` | another virtual cable: where the voice is played / the microphone others hear | VB-CABLE | Not checked — only VB-CABLE was installed. The same lookup by part of the name finds VB-CABLE; a name it cannot find is reported at start, and the voice then stays in your headphones. |
+| `VT_MODELS_DIR`, `VT_VOICES_DIR`, `VT_LOGS_DIR` | folders, relative to this one or absolute | `models`, `voices`, `logs` | `VT_VOICES_DIR` in another folder. Others not checked — all scripts read them through the same code. The launcher's own files (llama.cpp log, saved microphone) always stay in `logs\`. |
+| `VT_REF` | voice sample: a file name in the voices folder | `ref_<VT_SOURCE_LANG>` | your recorded voice and a voice made by `Design-Voice.bat` |
+| `VT_MIC`, `VT_OUT` | microphone / output: part of the name or a number | the Windows default | both by name; the default output follows Windows when you switch between speakers and headphones |
+| `VT_PUSH_KEY` | push-to-talk key, also "be quiet" in simultaneous mode | `ctrl_r` | Right Ctrl; other key names not checked |
+| `VT_LLAMA_PORT` | port of the local llama.cpp server (127.0.0.1 only) | `8093` | the default port only |
 
 ## Discord and games (virtual microphone)
 
