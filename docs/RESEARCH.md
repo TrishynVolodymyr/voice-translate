@@ -289,3 +289,29 @@ unmodified LLM (Qwen3.5-27B) + longest-common-prefix agreement and an "input may
 instruction, COMET 0.89 at an average lag (LongYAAL) of 1.9 s ([findings](https://aclanthology.org/2026.iwslt-1.39.pdf),
 [NeMo system](https://aclanthology.org/2026.iwslt-1.23.pdf)). Average lag is not the delay of the first word, so it
 compares with our numbers only roughly. Next steps are in the [roadmap](../ROADMAP.md).
+
+## 8. Pitfalls checklist
+
+What bit us, how we noticed, and what we did — for anyone building a similar local pipeline on Windows.
+
+| Pitfall | How it showed up | What we did |
+|---|---|---|
+| quickmt without the end-of-source token `</s>` | short phrases looped ("Thank you. Thank you…"), 1–2 s on the CPU | append `</s>` as the quickmt library does: 40–80 ms |
+| CTranslate2 with 6 OpenMP threads while the CPU is busy | most phrases ~80 ms, single ones up to 86 s | 2 threads on the CPU (~110 ms, stable), or the GPU |
+| Resampling every 0.1 s mic chunk with torchaudio | 36% of all cores while silent | `scipy.signal.resample_poly`: 0.6% |
+| sherpa-onnx CUDA after PyTorch has started CUDA | CUDA provider fails (DLL error 1114) and silently falls back to the CPU | load recognition before the voice model |
+| Parakeet on CUDA with < 0.8 s of audio | ~220 ms instead of ~80 ms — and the first pass of every phrase is that short | pad short audio with silence to 1 s |
+| Recognizing on a busy CPU | passes 1–2 s instead of 0.26 s, the simultaneous mode falls behind | recognition and translation on the GPU (~2–3% CPU) |
+| Re-reading a growing utterance with no full stops | window up to 28 s, passes up to 15 s apart | close long sentences at a comma, cut the translated audio |
+| Commas flipping between passes | translations differ, the first word waits 4+ s | open (roadmap: compare without punctuation) |
+| Committing confirmed words for good | early-pass errors locked in, divergence 20% → 32% | reverted: confirmation recomputed every pass |
+| A clause translated without the clause before it | "…because That I stopped a little" | previous clause as source context, its English as forced prefix |
+| Qwen3-TTS leading silence | ~0.45 s before every piece; with 37 pieces the queue grew to 5 s | trim leading silence (first sound 0.4 s earlier) |
+| Runaway pauses inside a piece | 2.75 s + 1.25 s of silence in a 12-word piece, voice 11 s behind | pauses > 0.6 s squeezed, piece capped at 0.8 s per word |
+| Choosing the speed once per piece | the voice raced to the edge of the translation, then stalled | speed only when there is something to catch up to, hysteresis |
+| Time-stretching audio that is not sped up | listeners heard cuts | stretch only pieces played faster |
+| Our own replay harness | the last chunk of each file counted as a full 0.1 s: replays drifted up to ~0.9 s | count the real chunk length |
+| PortAudio fixes the default output when the program starts | after switching Windows to headphones the voice stayed on the speakers | play through "Microsoft Sound Mapper", which follows the Windows default |
+| Device numbers change after a reboot | a test recorded the wrong microphone | find devices by (part of) their name |
+| VB-CABLE installer | makes the cable the default microphone and speakers | `Setup-VirtualCable.bat` remembers and restores your devices |
+| VRAM overflow next to a game | no error: Windows pages the program's memory to RAM, the game keeps priority, speech generation becomes 8–20× slower than real time | game mode: only the voice on the GPU (~5 GB) |
