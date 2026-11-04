@@ -78,8 +78,11 @@ phrase came out in Polish Latin script («Обережно, за тим буди
 passes in simultaneous mode slip more often. A hybrid was tried: if Parakeet's text contains ы/э/ъ/ё or mostly Latin
 letters, re-recognize with the Ukrainian-only NeMo model. On the read phrases it helped (GPU: 7.2% / 6.6% instead of
 8.3% / 8.8%). In a 46-phrase live session it was triggered on 19 phrases, mostly by English words and interjections
-written in Latin script, and the NeMo text was much worse (merged and broken words). The hybrid is therefore off; a
-better trigger would look only at Russian-only or Polish-only letters. Remaining systematic errors: «не»→«на»,
+written in Latin script, and the NeMo text was much worse (merged and broken words). The hybrid is therefore off by default; a
+better trigger would look only at Russian-only or Polish-only letters. This verdict is about this speaker: the live
+speech mixed in English words and some Russianisms, which the trigger took for slips. For someone who speaks Ukrainian
+without them the hybrid may well help — not checked. It stays available: `--asr hybrid`, models via
+`Download-Models.bat -Hybrid`. Remaining systematic errors: «не»→«на»,
 «Та ні»→«Тані». No translator repairs a phrase that was recognized in the wrong language.
 
 ## 2. Translation
@@ -157,8 +160,8 @@ Cloned from a ~20 s Ukrainian sample; 5 English phrases of 1.4–8 s.
   median 88–89% (max 96–99%), power median 55–70 W of the card's ~200 W; idle ~1%. "Utilization" is the share of time
   any kernel runs: the autoregressive steps are small and sequential.
 
-**Push-to-talk end to end** (`scripts/bench_e2e.py`: recorded phrases fed as if the key had just been released;
-Parakeet v3 int8 on the CPU):
+**Push-to-talk end to end** (an earlier local script, superseded by `scripts/bench_ptt.py`: recorded phrases fed as if
+the key had just been released; Parakeet v3 int8 on the CPU):
 
 | Translator | Key release → first audio chunk, median | Min–max | Parts |
 |---|---|---|---|
@@ -169,7 +172,7 @@ This bench counted the first audio chunk, before the leading silence was trimmed
 roughly linearly with phrase length: a 36 s monologue took 1.8 s to recognize, 1.6 s to translate (Hy-MT2-7B) and
 3.6 s to the first sound; with quickmt, live phrases of 7.9–37.7 s gave 0.97–5.90 s.
 
-### Push-to-talk: recognition and quickmt on the CPU or the GPU (2026-11-04)
+### Push-to-talk: recognition and quickmt on the CPU or the GPU (2026-11-04, `scripts/bench_ptt.py`)
 
 20 recorded phrases (2.5–6.4 s) fed as if the key had just been released; the 1.7B voice on the GPU in every row.
 "Loaded" = 12 busy-loop processes on every CPU thread — harder than a game (in Path of Exile 2 the CPU setup gave
@@ -189,7 +192,7 @@ roughly linearly with phrase length: a 36 s monologue took 1.8 s to recognize, 1
 - quickmt threads on a fully loaded CPU (40 translations; other programs also loaded the CPU during this one): 2 threads
   median 1.3 s, max 23 s; 2 threads with `OMP_WAIT_POLICY=PASSIVE` 0.19 / 0.45 s; 1 thread 0.16 / 0.55 s — now 1 thread.
 
-### Voice pace limit (`VT_TTS_PACE`, 2026-11-04)
+### Voice pace limit (`VT_TTS_PACE`, 2026-11-04, `scripts/bench_pace.py`)
 
 The 20 translated phrases (~3 s each) spoken by the 1.7B voice; after the first 1 s of speech, generation is held to
 the given multiple of real time, so the GPU rests between chunks. GPU sampled every 100 ms while generating.

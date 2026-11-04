@@ -5,7 +5,8 @@
 #   Download-Models.ps1 -Llm       + Hy-MT2-7B translator and llama.cpp b12040 runtime (~5 GB; default of Start-VoiceTranslate.bat)
 #   Download-Models.ps1 -Small     + Qwen3-TTS 0.6B voice (~2.4 GB; less VRAM, less natural)
 #   Download-Models.ps1 -VoiceDesign  + Qwen3-TTS VoiceDesign (~4.2 GB; only to create a voice from a text description)
-param([switch]$Llm, [switch]$Small, [switch]$VoiceDesign)
+#   Download-Models.ps1 -Hybrid    + Parakeet v3 int8 and the Ukrainian-only NeMo model for --asr hybrid (~1.1 GB)
+param([switch]$Llm, [switch]$Small, [switch]$VoiceDesign, [switch]$Hybrid)
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $root = Split-Path -Parent $PSScriptRoot
@@ -66,6 +67,10 @@ Get-HF 'Qwen/Qwen3-TTS-12Hz-1.7B-Base' 'Qwen3-TTS-12Hz-1.7B-Base' @()
 
 if ($Small) { Get-HF 'Qwen/Qwen3-TTS-12Hz-0.6B-Base' 'Qwen3-TTS-12Hz-0.6B-Base' @() }
 if ($VoiceDesign) { Get-HF 'Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign' 'Qwen3-TTS-12Hz-1.7B-VoiceDesign' @() }
+if ($Hybrid) {
+    Get-HF 'csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8' 'parakeet-tdt-0.6b-v3-int8' @('encoder.int8.onnx', 'decoder.int8.onnx', 'joiner.int8.onnx', 'tokens.txt')
+    Get-HF 'NeonIH/sherpa-onnx-nemo-fast-conformer-ctc-uk' 'nemo-fastconformer-ctc-uk' @('model.onnx', 'tokens.txt', 'README.md')
+}
 # Translator from VT_MT (.env): hymt7 (also -Llm), hymt1.8, or your own GGUF — that one only needs the runtime.
 $mtSet = "$env:VT_MT"
 if ($Llm -or $mtSet -eq 'hymt7') { Get-HF 'tencent/Hy-MT2-7B-GGUF' 'hy-mt2' @('Hy-MT2-7B-Q4_K_M.gguf') }

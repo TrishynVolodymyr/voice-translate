@@ -13,6 +13,7 @@ REPOS = [
     ("parakeet-tdt-0.6b-v3-int8", "csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8"),
     ("parakeet-tdt-0.6b-v3-fp32", "csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3"),
     ("parakeet-ultra-int8", "chrmongeau/sherpa-onnx-nemo-parakeet-ultra-int8"),
+    ("nemo-fastconformer-ctc-uk", "NeonIH/sherpa-onnx-nemo-fast-conformer-ctc-uk"),
     ("Qwen3-TTS-12Hz-0.6B-Base", "Qwen/Qwen3-TTS-12Hz-0.6B-Base"),
     ("Qwen3-TTS-12Hz-1.7B-Base", "Qwen/Qwen3-TTS-12Hz-1.7B-Base"),
     ("Qwen3-TTS-12Hz-1.7B-VoiceDesign", "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"),

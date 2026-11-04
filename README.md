@@ -81,6 +81,7 @@ exception is the optional VB-CABLE driver, see below). Use a short path without 
    |---|---|---|
    | `Download-Models.bat -Llm` | Hy-MT2-7B translator + llama.cpp — the most accurate translator (`VT_MT=hymt7`) | ~5 GB |
    | `Download-Models.bat -VoiceDesign` | model that creates a voice from a description (`Design-Voice.bat`) | ~4.2 GB |
+   | `Download-Models.bat -Hybrid` | Parakeet v3 and a Ukrainian-only model for `--asr hybrid` | ~1.1 GB |
    | `Download-Models.bat -Small` | smaller 0.6B voice (−2 GB VRAM, less natural) | ~2.4 GB |
 
    Every file is checked against its Hugging Face / GitHub checksum.
@@ -123,6 +124,7 @@ Launchers accept arguments, e.g. from PowerShell: `.\Start-VoiceTranslate.bat --
 | `--cable` | force the virtual microphone on (it is on by itself when the cable is found; `VT_CABLE=0` in `.env` turns it off) |
 | `--key ctrl_r` | push-to-talk key (pynput names: `alt_r`, `f9`, `x`…) |
 | `--mic NAME`, `--out NAME` | microphone / output device (part of its name or its number; `Record-Samples.bat --list`) |
+| `--asr hybrid` | Parakeet v3, and phrases it writes in Russian or Latin letters are re-recognized by a Ukrainian-only model (needs `-Hybrid`; see «If something does not work») |
 | `--asr-device cuda` / `cpu` | where recognition (and quickmt) runs; also `VT_ASR_DEVICE` in `.env`. Push-to-talk uses the CPU (more accurate Parakeet Ultra, ~0.15 s slower than the GPU, which would take ~3.5 GB more); the simultaneous mode uses the GPU (a busy CPU cannot keep up with it) |
 
 In simultaneous mode **Right Ctrl** means "be quiet": the voice drops everything it has not said yet.
@@ -242,6 +244,12 @@ Your own voice is not heard there — only the translated one. Checked with Disc
 - **It hears the wrong microphone / plays to the wrong device** — `Record-Samples.bat --list` shows the devices; set
   `VT_MIC` / `VT_OUT` in `.env` (part of the name is enough).
 - **Out of GPU memory** — close games or other GPU programs, or use `--tts 0.6B`, `--asr-device cpu`.
+- **Your Ukrainian comes out in Russian or in Latin letters** — the recognizer has no language setting and sometimes
+  slips. If you speak Ukrainian without English words and Russianisms, try the hybrid: `Download-Models.bat -Hybrid`,
+  then start with `--asr hybrid` — such phrases are re-recognized by a Ukrainian-only model. On read phrases it helped
+  (7.2 / 6.6% errors instead of 8.3 / 8.8% on the GPU); on the author's live speech, mixed with English words and
+  Russianisms, it made things worse: those words looked like slips, and the Ukrainian-only model is weaker on
+  conversational speech ([RESEARCH](docs/RESEARCH.md#language-slips-and-the-hybrid-fallback)).
 - **The voice sounds cut or robotic in a call** — try turning off the app's noise suppression (Krisp in Discord), echo
   cancellation and automatic gain: they are made for live microphones, not for synthesized speech.
 

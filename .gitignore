@@ -31,6 +31,8 @@
 !/scripts/record_samples.py
 !/scripts/design_voice.py
 !/scripts/bench_asr.py
+!/scripts/bench_ptt.py
+!/scripts/bench_pace.py
 !/scripts/verify_sha.py
 !/scripts/Install.ps1
 !/scripts/Download-Models.ps1

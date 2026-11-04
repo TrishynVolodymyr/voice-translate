@@ -48,7 +48,7 @@ def main() -> None:
     ap.add_argument("--asr", default="auto", choices=["auto", "parakeet", "ultra", "hybrid"],
                     help="auto — Parakeet Ultra на процесорі (точніша за v3: 7,7–8,3%% проти 9,4–12,2%% на голосі користувача), Parakeet v3 fp32 на відеокарті; parakeet / ultra — примусово; hybrid — Parakeet + запасна NeMo-uk")
     ap.add_argument("--mt", default="hymt7", choices=list(TRANSLATORS),
-                    help="hymt7 — Hy-MT2-7B (найточніший); hymt1.8 — Hy-MT2-1.8B; gemma — TranslateGemma-4B; "
+                    help="hymt7 — Hy-MT2-7B (найточніший); hymt1.8 — Hy-MT2-1.8B; "
                          "quickmt — найшвидший, буквальний; gguf — свій GGUF з VT_MT (сервер запускає Start-скрипт)")
     ap.add_argument("--asr-device", default=env("VT_ASR_DEVICE", "auto"), choices=["auto", "cpu", "cuda"],
                     help="auto — процесор (Parakeet Ultra точніший, відеокарта економила лише ~0,15 с на фразу); "

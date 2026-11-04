@@ -194,30 +194,6 @@ class MT:
         return " ".join(out)
 
 
-class LLMMT:
-    """TranslateGemma-4B through this folder's own llama-server (runtime\\). The prompt is the model's own chat
-    template (see logs\\translategemma-template.jinja), sent raw to /completion."""
-
-    PROMPT = ("<start_of_turn>user\nYou are a professional {sn} ({s}) to {tn} ({t}) translator. Your goal is to "
-              "accurately convey the meaning and nuances of the original {sn} text while adhering to {tn} "
-              "grammar, vocabulary, and cultural sensitivities.\nProduce only the {tn} translation, without any "
-              "additional explanations or commentary. Please translate the following {sn} text into {tn}:"
-              "\n\n\n{{text}}<end_of_turn>\n<start_of_turn>model\n").format(sn=SRC_NAME, s=SRC, tn=TGT_NAME, t=TGT)
-
-    def __init__(self, url: str = LLAMA_URL):
-        self.url = url
-
-    def __call__(self, text: str) -> str:
-        import json
-        import urllib.request
-        if not text.strip():
-            return ""
-        body = json.dumps({"prompt": self.PROMPT.format(text=text.strip()), "n_predict": 160, "temperature": 0,
-                           "stop": ["<end_of_turn>"], "cache_prompt": True}).encode()
-        req = urllib.request.Request(self.url + "/completion", body, {"Content-Type": "application/json"})
-        return json.load(urllib.request.urlopen(req, timeout=30))["content"].strip()
-
-
 class HyMT:
     """Tencent Hy-MT2 (1.8B / 7B) through this folder's llama-server, using the model's own chat template (--jinja)
     and the prompts from its model card (target language by its English name). With context=N the previous N
@@ -258,7 +234,6 @@ class HyMT:
 TRANSLATORS = {
     "hymt7": ("hy-mt2\\Hy-MT2-7B-Q4_K_M.gguf", lambda: HyMT(context=2, greedy=True)),
     "hymt1.8": ("hy-mt2\\Hy-MT2-1.8B-Q8_0.gguf", lambda: HyMT(greedy=True)),
-    "gemma": ("translategemma-4b-it\\translategemma-4b-it.Q6_K.gguf", lambda: LLMMT()),
     "gguf": (None, lambda: HyMT(greedy=True)),
     "quickmt": (None, lambda device="cpu": MT(device)),
 }
@@ -268,7 +243,7 @@ def mt_label(mt: str) -> str:
     """What to print for the translator: the model, or the file name of a custom GGUF."""
     if mt == "gguf":
         return Path(env("VT_MT", "gguf")).name
-    return {"hymt7": "Hy-MT2-7B", "hymt1.8": "Hy-MT2-1.8B", "gemma": "TranslateGemma-4B", "quickmt": QUICKMT}.get(mt, mt)
+    return {"hymt7": "Hy-MT2-7B", "hymt1.8": "Hy-MT2-1.8B", "quickmt": QUICKMT}.get(mt, mt)
 
 
 def where(device: str) -> str:

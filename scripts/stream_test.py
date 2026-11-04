@@ -98,7 +98,7 @@ def main():
     ap.add_argument("--asr", default="auto", choices=["auto", "parakeet", "ultra", "hybrid"],
                     help="auto — Parakeet Ultra на процесорі (точніша за v3: 7,7–8,3%% проти 9,4–12,2%% на голосі користувача), Parakeet v3 fp32 на відеокарті; parakeet / ultra — примусово; hybrid — Parakeet + запасна NeMo-uk")
     ap.add_argument("--asr-device", default=env("VT_ASR_DEVICE", "auto"), choices=["auto", "cpu", "cuda"],
-                    help="auto — на відеокарті з quickmt (перекладач на процесорі), на процесорі з Hy-MT2/Gemma (їм потрібна відеопам'ять); cuda — Parakeet fp32 і quickmt на GPU, +4,5 ГБ VRAM, не гальмує від зайнятого процесора")
+                    help="auto — на відеокарті з quickmt (перекладач на процесорі), на процесорі з Hy-MT2 (йому потрібна відеопам'ять); cuda — Parakeet fp32 і quickmt на GPU, +4,5 ГБ VRAM, не гальмує від зайнятого процесора")
     ap.add_argument("--hold", type=int, default=2, help="скільки останніх узгоджених слів притримувати")
     ap.add_argument("--mic", default=env("VT_MIC"))
     ap.add_argument("--voice", action="store_true", help="озвучувати переклад по ходу (Qwen3-TTS, ваш тембр)")

@@ -8,6 +8,8 @@ into this folder. They keep their own licenses.
 | Model | Author / source | License | Used for |
 |---|---|---|---|
 | Parakeet-TDT-0.6B-v3 (sherpa-onnx fp32 export `csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3`) | NVIDIA; export by the k2-fsa team | CC-BY-4.0 | speech recognition on the GPU |
+| Parakeet-TDT-0.6B-v3 int8 (`csukuangfj/sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8`), optional (`-Hybrid`) | NVIDIA; export by the k2-fsa team | CC-BY-4.0 | recognition for `--asr hybrid` on the CPU |
+| FastConformer CTC uk (`NeonIH/sherpa-onnx-nemo-fast-conformer-ctc-uk`, from `nvidia/stt_ua_fastconformer_hybrid_large_pc`), optional (`-Hybrid`) | NVIDIA; community export | CC-BY-4.0 | Ukrainian-only fallback for `--asr hybrid` |
 | Parakeet Ultra (int8 export `chrmongeau/sherpa-onnx-nemo-parakeet-ultra-int8`) | Moondream, post-trained from NVIDIA Parakeet-TDT-0.6B-v3; community export | CC-BY-4.0 | speech recognition on the CPU |
 | quickmt-uk-en (`quickmt/quickmt-uk-en`); other pairs `quickmt/quickmt-<from>-<to>` if your `.env` asks for them | quickmt | CC-BY-4.0 | fast translation (Ukrainian→English by default) |
 | Hy-MT2-7B GGUF (`tencent/Hy-MT2-7B-GGUF`), optional | Tencent | Apache-2.0 | most accurate translation |
@@ -16,7 +18,7 @@ into this folder. They keep their own licenses.
 | Qwen3-TTS-12Hz-1.7B-VoiceDesign (`Qwen/…`), optional | Alibaba Qwen | Apache-2.0 | creating a voice from a description |
 | Silero VAD (`silero_vad.onnx` from the sherpa-onnx releases) | Silero | MIT | detecting speech in simultaneous mode |
 
-CC-BY-4.0 requires attribution: «Parakeet-TDT-0.6B-v3 by NVIDIA», «Parakeet Ultra by Moondream», «quickmt-uk-en by
+CC-BY-4.0 requires attribution: «Parakeet-TDT-0.6B-v3 by NVIDIA», «Parakeet Ultra by Moondream», «stt_ua_fastconformer_hybrid_large_pc by NVIDIA» (if you use `-Hybrid`), «quickmt-uk-en by
 quickmt» (and any other quickmt pair you download), each under CC-BY-4.0 (<https://creativecommons.org/licenses/by/4.0/>).
 
 ## Programs and libraries

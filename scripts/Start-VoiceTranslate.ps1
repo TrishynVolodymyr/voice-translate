@@ -23,17 +23,14 @@ $port = if ($env:VT_LLAMA_PORT) { [int]$env:VT_LLAMA_PORT } else { 8093 }
 $argline = $args -join ' '
 # The last value wins (as in argparse): a launcher's own arguments come before the user's (%*).
 function Get-LastArg([string]$name) { $all = [regex]::Matches($argline, "--$name\s+(\S+)"); if ($all.Count) { $all[$all.Count - 1].Groups[1].Value } }
-# Layers of an LLM translator on the GPU, in this order: --ngl typed by the user > VT_MT_NGL in .env > the launcher's
-# own --ngl-default (a launcher may suggest e.g. 0 = CPU) > 999 (all on the GPU).
+# Layers of an LLM translator on the GPU: --ngl typed by the user > VT_MT_NGL in .env > 999 (all on the GPU).
 $ngl = Get-LastArg 'ngl'
 if (-not $ngl) { $ngl = $env:VT_MT_NGL }
-if (-not $ngl) { $ngl = Get-LastArg 'ngl-default' }
 if (-not $ngl) { $ngl = '999' }
 # Translator, in this order: --mt typed by the user > VT_MT in .env > the launcher's own --mt-default > Hy-MT2-7B.
 # A value is a built-in name or the path to any GGUF (e.g. your own fine-tune), served by llama-server with its chat
 # template and prompted like Hy-MT2.
-$ggufs = @{ 'hymt7' = 'hy-mt2\Hy-MT2-7B-Q4_K_M.gguf'; 'hymt1.8' = 'hy-mt2\Hy-MT2-1.8B-Q8_0.gguf';
-            'gemma' = 'translategemma-4b-it\translategemma-4b-it.Q6_K.gguf' }
+$ggufs = @{ 'hymt7' = 'hy-mt2\Hy-MT2-7B-Q4_K_M.gguf'; 'hymt1.8' = 'hy-mt2\Hy-MT2-1.8B-Q8_0.gguf' }
 $mt = Get-LastArg 'mt'
 if (-not $mt) { $mt = $env:VT_MT }
 if (-not $mt) { $mt = Get-LastArg 'mt-default' }
@@ -76,13 +73,26 @@ $need = @(
 )
 # quickmt: one model per language pair (VT_SOURCE_LANG / VT_TARGET_LANG); its absence is explained by the Python side
 if ($useLlm) { $need += $server, $gguf }
-if ($asrDev -eq 'cpu') { $need += Join-Path $models 'parakeet-ultra-int8\encoder.int8.onnx' }
-else { $need += Join-Path $models 'parakeet-tdt-0.6b-v3-fp32\encoder.weights' }
+# Recognizer (--asr): auto = Parakeet Ultra on the CPU / Parakeet v3 fp32 on the GPU; parakeet = v3 (int8 on the CPU);
+# hybrid = v3 plus the Ukrainian-only NeMo model for phrases v3 writes in Russian or Latin letters. v3 int8 and NeMo
+# are not in the core download: Download-Models.bat -Hybrid.
+$asrKind = Get-LastArg 'asr'
+$v3 = if ($asrDev -eq 'cpu') { 'parakeet-tdt-0.6b-v3-int8\encoder.int8.onnx' } else { 'parakeet-tdt-0.6b-v3-fp32\encoder.weights' }
+switch ($asrKind) {
+    'ultra' { $need += Join-Path $models 'parakeet-ultra-int8\encoder.int8.onnx' }
+    'parakeet' { $need += Join-Path $models $v3 }
+    'hybrid' { $need += (Join-Path $models $v3), (Join-Path $models 'nemo-fastconformer-ctc-uk\model.onnx') }
+    default {
+        if ($asrDev -eq 'cpu') { $need += Join-Path $models 'parakeet-ultra-int8\encoder.int8.onnx' }
+        else { $need += Join-Path $models 'parakeet-tdt-0.6b-v3-fp32\encoder.weights' }
+    }
+}
 foreach ($f in $need) {
     if (-not (Test-Path $f)) {
         $hint = if ($f -eq $gguf -and $mtName -eq 'gguf') { 'Перевірте шлях VT_MT у .env' }
                 elseif ($f -eq $gguf -and $mt -eq 'hymt7') { 'Запустіть Download-Models.bat -Llm' }
                 elseif ($tts -eq '0.6B' -and $f -like '*0.6B*') { 'Запустіть Download-Models.bat -Small' }
+                elseif ($f -like '*nemo-fastconformer*' -or $f -like '*v3-int8*') { 'Запустіть Download-Models.bat -Hybrid' }
                 else { 'Запустіть Download-Models.bat' }
         Write-Host "Не знайдено: $f`n$hint (див. README)." -ForegroundColor Red
         exit 1
@@ -163,7 +173,7 @@ try {
     # The translator and -ngl resolved above replace every --mt / --ngl given (Python knows a custom GGUF as "gguf")
     $pass = @()
     for ($i = 0; $i -lt $args.Count; $i++) {
-        if ($args[$i] -in '--mt', '--mt-default', '--ngl', '--ngl-default', '--asr-device') { $i++; continue }
+        if ($args[$i] -in '--mt', '--mt-default', '--ngl', '--asr-device') { $i++; continue }
         if ($args[$i] -notin '--stream-test', '--cable') { $pass += $args[$i] }
     }
     if ($cable) { $pass += '--cable' }
