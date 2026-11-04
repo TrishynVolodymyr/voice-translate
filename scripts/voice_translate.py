@@ -39,6 +39,9 @@ def main() -> None:
     ap.add_argument("--mic", default=env("VT_MIC"), help="мікрофон (номер/назва, див. Record-Samples.bat --list)")
     ap.add_argument("--out", default=env("VT_OUT"), help="пристрій виводу (номер або частина назви; за замовчуванням — системний)")
     ap.add_argument("--cable", action="store_true", help="голос також у віртуальний мікрофон VB-CABLE (Discord, ігри)")
+    ap.add_argument("--tts-pace", type=float, default=float(env("VT_TTS_PACE", "0") or 0),
+                    help="генерувати голос не швидше за стільки × реального часу (напр. 1.5) — відеокарта відпочиває "
+                         "між шматками; 0 — без обмеження (~2,5× для 1.7B)")
     ap.add_argument("--chunk", type=int, default=4, help="кроків TTS на шматок (менше — швидший перший звук)")
     # Parakeet only by default (user's choice 2026-11-02): in the live stream test the hybrid handed 19 of 46 phrases
     # to NeMo because English words (QuickMT, "in this spirit") look like a slip, and NeMo's text was much worse.
@@ -69,12 +72,12 @@ def main() -> None:
     print_placement([
         ("розпізнавання", {"ultra": "Parakeet Ultra", "hybrid": "Parakeet v3 + NeMo-uk"}.get(kind, "Parakeet v3"), where(dev)),
         ("переклад", mt_label(a.mt), mt_where(a.mt, dev, a.ngl)),
-        ("голос", f"Qwen3-TTS {a.tts}", "відеокарта"),
+        ("голос", f"Qwen3-TTS {a.tts}", "відеокарта" + (f" (не швидше за {a.tts_pace:g}× реального часу)" if a.tts_pace else "")),
     ])
     print("Завантаження моделей…", flush=True)
     asr = HybridASR(provider=dev) if kind == "hybrid" else ASR(provider=dev, kind=kind)
     mt = TRANSLATORS[a.mt][1](dev) if a.mt == "quickmt" else TRANSLATORS[a.mt][1]()
-    tts = TTS(a.tts, ref, prompts.get(ref.stem, ""), xvec_only=(a.mode == "xvec"))
+    tts = TTS(a.tts, ref, prompts.get(ref.stem, ""), xvec_only=(a.mode == "xvec"), pace=a.tts_pace)
     tts.warmup()
     mt("Привіт")
     player = output_players(a.out, a.cable)

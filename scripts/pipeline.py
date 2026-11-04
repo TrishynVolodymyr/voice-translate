@@ -312,9 +312,13 @@ class TTS:
     """Qwen3-TTS Base voice cloning with CUDA graphs. xvec_only=True needs no reference transcript and switches
     languages more cleanly (useful for a Ukrainian reference); ICL (False) needs the exact transcript."""
 
-    def __init__(self, size: str = "0.6B", ref_audio=None, ref_text: str = "", xvec_only: bool = True):
+    def __init__(self, size: str = "0.6B", ref_audio=None, ref_text: str = "", xvec_only: bool = True,
+                 pace: float = 0.0, lead: float = 1.0):
         self.model = load_qwen_tts(f"Qwen3-TTS-12Hz-{size}-Base")
         self.ref_audio, self.ref_text, self.xvec_only = str(ref_audio) if ref_audio else None, ref_text, xvec_only
+        # pace > 0: once `lead` seconds of speech are ready, generate at most `pace`× faster than it plays, so the GPU
+        # rests between chunks (VT_TTS_PACE; off by default). Unlimited, the 1.7B voice runs ~2.5× real time.
+        self.pace, self.lead = pace, lead
 
     def warmup(self) -> None:
         self.model.warmup(prefill_len=100)
@@ -323,7 +327,21 @@ class TTS:
 
     def stream(self, text: str, chunk_size: int = 4, trim: bool = True):
         """Yields (float32 audio chunk, sample rate). trim: drop the silence the model puts before the speech —
-        ~0.45 s per phrase (2026-11-02); 50 ms before the first sound (> -45 dBFS in 20 ms frames) are kept."""
+        ~0.45 s per phrase (2026-11-02); 50 ms before the first sound (> -45 dBFS in 20 ms frames) are kept.
+        With self.pace the generator waits between chunks: playback starts with the first chunk, so the speech ready
+        ahead of it never shrinks below `lead` and the first sound is not delayed."""
+        t0, ready = None, 0.0
+        for audio, sr in self._stream(text, chunk_size, trim):
+            if t0 is None:
+                t0 = time.perf_counter()
+            yield audio, sr
+            if self.pace > 0:
+                ready += len(audio) / sr
+                wait = t0 + (ready - self.lead) / self.pace - time.perf_counter()
+                if wait > 0:
+                    time.sleep(wait)
+
+    def _stream(self, text: str, chunk_size: int, trim: bool):
         head = None if trim else False
         for audio, sr, _ in self.model.generate_voice_clone_streaming(
                 text=text, language=TGT_NAME, ref_audio=self.ref_audio, ref_text=self.ref_text,

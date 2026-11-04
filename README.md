@@ -12,8 +12,8 @@ Italian, Portuguese, Russian, Chinese, Japanese, Korean. See [Languages](#langua
 
 ## What it can do
 
-- **Push-to-talk translation** — hold Right Ctrl, speak, release: the translation starts **~0.6–0.8 s after you release
-  the key** (measured on an RTX 4070). The whole phrase is translated at once, so quality is best here.
+- **Push-to-talk translation** — hold Right Ctrl, speak, release: the translation starts **~0.55 s after you release
+  the key** (measured on an RTX 4070; up to ~1 s while a game loads the CPU). The whole phrase is translated at once, so quality is best here.
 - **Your voice, without your accent** — the voice is cloned from a ~30 s recording of you speaking your own language;
   only the timbre is taken, the pronunciation of the other language comes from the model.
 - **Or any other voice** — cloning is optional: create a voice from a text description ("a calm male voice in his
@@ -202,6 +202,7 @@ there; the reason it should work is given next to it.
 | `VT_REF` | voice sample: a file name in the voices folder | `ref_<VT_SOURCE_LANG>` | your recorded voice and a voice made by `Design-Voice.bat` |
 | `VT_MIC`, `VT_OUT` | microphone / output: part of the name or a number | the Windows default | both by name; the default output follows Windows when you switch between speakers and headphones |
 | `VT_PUSH_KEY` | push-to-talk key, also "be quiet" in simultaneous mode | `ctrl_r` | Right Ctrl; other key names not checked |
+| `VT_TTS_PACE` | push-to-talk: generate the voice at most this many times faster than it plays (e.g. `1.5`), so the GPU rests between chunks | no limit (~2.8×) | without a game: GPU busy 73% → 63% (1.5) / 56% (1.2), the first sound and continuity unchanged, total work and power about the same ([RESEARCH §3](docs/RESEARCH.md)). Effect on game FPS not measured yet. |
 | `VT_LLAMA_PORT` | port of the local llama.cpp server (127.0.0.1 only) | `8093` | the default port only |
 
 ## Discord and games (virtual microphone)
@@ -225,7 +226,8 @@ there; the reason it should work is given next to it.
 5. **Games:** the same `Start-VoiceTranslate.bat` — recognition and quickmt run on the CPU, only the voice on the GPU
    (~5 GB), which fits next to a demanding game in 12 GB. With recognition or a big translator on the GPU (~8.5–9.6 GB)
    it does not: the voice then becomes 8–20× slower than real time while the game keeps its FPS. With a GGUF translator
-   set `VT_MT_NGL=0`; if the voice stutters in heavy scenes, add `--tts 0.6B`. Capping the game's FPS leaves the voice more GPU
+   set `VT_MT_NGL=0`; if the voice stutters in heavy scenes, add `--tts 0.6B`. To experiment: `VT_TTS_PACE=1.5` makes
+   the voice take the GPU in smaller bursts (not yet measured in a game). Capping the game's FPS leaves the voice more GPU
    time. Games use the default microphone automatically; otherwise Windows Settings → System → Sound → Volume mixer → the
    game → Input device = «CABLE Output», or Steam → Settings → Voice → Recording device.
 
@@ -246,7 +248,7 @@ Your own voice is not heard there — only the translated one. Checked with Disc
 
 | What | Result |
 |---|---|
-| Push-to-talk: key released → first sound of the translation | ~0.6 s median, up to ~1.1 s (quickmt, recognition on the CPU; 20 phrases of 2.5–6.4 s); ~0.45 s with `VT_ASR_DEVICE=cuda`; ~0.65 s with Hy-MT2-7B |
+| Push-to-talk: key released → first sound of the translation | ~0.55 s median, max ~0.77 s (quickmt and recognition on the CPU; 20 phrases of 2.5–6.4 s); ~1.05 s with the CPU loaded 100%; ~0.41 s with `VT_ASR_DEVICE=cuda`; ~0.65 s with Hy-MT2-7B |
 | Simultaneous: start of a phrase → first sound of the translation | ~2.5–3.5 s on live speech |
 | Recognition errors on one speaker (40 phrases) | ~8% WER (Parakeet v3 fp32 on GPU / Parakeet Ultra on CPU) |
 | CPU use | push-to-talk: busy only while a phrase is processed (~0.2–0.4 s); simultaneous mode: ~2–3% (recognition on the GPU) |

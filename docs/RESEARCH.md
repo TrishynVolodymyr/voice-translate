@@ -167,6 +167,45 @@ This bench counted the first audio chunk, before the leading silence was trimmed
 roughly linearly with phrase length: a 36 s monologue took 1.8 s to recognize, 1.6 s to translate (Hy-MT2-7B) and
 3.6 s to the first sound; with quickmt, live phrases of 7.9–37.7 s gave 0.97–5.90 s.
 
+### Push-to-talk: recognition and quickmt on the CPU or the GPU (2026-11-04)
+
+20 recorded phrases (2.5–6.4 s) fed as if the key had just been released; the 1.7B voice on the GPU in every row.
+"Loaded" = 12 busy-loop processes on every CPU thread — harder than a game (in Path of Exile 2 the CPU setup gave
+0.6–1.0 s, §6).
+
+| Recognition + quickmt | CPU | Recognition, median | quickmt, median | Key release → first sound, median (max) |
+|---|---|---|---|---|
+| CPU: Parakeet Ultra int8, quickmt int8 on 1 thread | idle | 140 ms | 120 ms | 0.54–0.56 s (0.77) |
+| GPU: Parakeet v3 fp32, quickmt int8_float16 | idle | 96 ms | 19 ms | 0.41 s (0.55) |
+| CPU | loaded 100% | 447 ms | 217 ms | 1.05 s (1.34) |
+| GPU | loaded 100% | 129 ms | 36 ms | 0.51 s (0.60) |
+
+- The GPU saves ~0.14 s on an idle CPU and ~0.55 s on a fully loaded one, for ~3.5 GB more VRAM; recognition on the
+  CPU (Ultra) is the more accurate one (§1; the two recognizers wrote 9 of these 20 phrases differently). So
+  push-to-talk defaults to the CPU, the simultaneous mode to the GPU (`VT_ASR_DEVICE` changes it).
+- quickmt translates the same on both: 18 of 20 identical on the same input, the other two differ by a comma / "we'll".
+- quickmt threads on a fully loaded CPU (40 translations; other programs also loaded the CPU during this one): 2 threads
+  median 1.3 s, max 23 s; 2 threads with `OMP_WAIT_POLICY=PASSIVE` 0.19 / 0.45 s; 1 thread 0.16 / 0.55 s — now 1 thread.
+
+### Voice pace limit (`VT_TTS_PACE`, 2026-11-04)
+
+The 20 translated phrases (~3 s each) spoken by the 1.7B voice; after the first 1 s of speech, generation is held to
+the given multiple of real time, so the GPU rests between chunks. GPU sampled every 100 ms while generating.
+
+| Limit | Speed over the whole phrase | GPU busy | Power | First chunk | Gaps a 1× player would hear |
+|---|---|---|---|---|---|
+| off | 2.8× | 72–73% | 79 W | 0.29 s | none* |
+| 2× | 2.7× | 73% | 80 W | 0.29 s | none |
+| 1.5× | 2.2× | 63% | 80 W | 0.29 s | none* |
+| 1.2× | 1.75× | 56% | 76 W | 0.29 s | none* |
+
+\* 0.01–0.09 s in total over 62 s of speech, the same with and without the limit — timing noise, not audible.
+
+It works without side effects — the first sound and the continuity are unchanged — but it spreads the same work over
+a longer time: the GPU is busy a smaller share of the time, while power hardly drops (the card stays at high clocks).
+On short phrases the unlimited first second dilutes the effect. Whether a game gets more FPS from it is not measured
+yet; the expected gain is smaller, more even bursts of GPU load while the voice speaks.
+
 ## 4. VRAM budget (12 GB card; the desktop itself used ~1.5–2.4 GB)
 
 | Setup | Used by the app | Free on the card | Use |
@@ -262,9 +301,9 @@ without the voice).
 | Recognition and quickmt on the CPU (today's default), voice 1.7B | 1.07–1.10× faster | 0.6–1.0 s | 80–90 (130–145 without) |
 | The same, voice 0.6B (`--tts 0.6B`) | 1.1–1.3× faster | 0.55–1.3 s | 80–90 (130–145 without) |
 
-Game mode runs recognition and translation on the CPU and only the voice on the GPU; measured without heavy effects.
-Headroom is small (1.07–1.3×); ideas — buffering a whole phrase when generation falls below real time, and a GPU
-duty-cycle limit for the voice — are in the roadmap.
+This setup runs recognition and translation on the CPU and only the voice on the GPU; measured without heavy
+effects. Headroom is small (1.07–1.3×); buffering a whole phrase when generation falls below real time is in the
+roadmap; the voice pace limit (§3) is available as `VT_TTS_PACE`, its effect in a game is not measured yet.
 
 ## 7. What exists elsewhere and why we did not use it (as of November 2026)
 

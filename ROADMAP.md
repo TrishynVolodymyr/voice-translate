@@ -1,6 +1,6 @@
 # Roadmap: towards real simultaneous translation
 
-Push-to-talk works well (~0.6–0.8 s from releasing the key to the translated speech). The simultaneous mode
+Push-to-talk works well (~0.55 s from releasing the key to the translated speech). The simultaneous mode
 (`Start-StreamVoice.bat`) is a working prototype. Below is what is still unsatisfying, what we measured, and what we would
 try next. Numbers are from Ukrainian → English, an RTX 4070 12 GB and one speaker's live tests.
 
@@ -59,8 +59,8 @@ Half of it is the translator: offline translators change their translation of th
   (0.55–1.3 s); game 80–90 FPS (130–145 without), measured while running without heavy effects.
 - [ ] Next to a game the voice has little headroom (1.07–1.3×): when generation falls below real time, buffer the whole phrase
   and play it in one piece instead of stuttering.
-- [ ] TTS keeps the GPU busy ~88% of the time while speaking (~1/3 of its power): a duty-cycle limit (e.g. 70%) for
-  games.
+- [ ] Measure the voice pace limit (`VT_TTS_PACE`) in a game: without one it takes the GPU 73% → 56% of the time at
+  1.2×, with the same total work (RESEARCH §3) — does the game get more FPS?
 - [ ] Less VRAM: fp16 Parakeet export (~1.2 GB instead of 2.4).
 - Tried and rejected: Hy-MT2-30B-A3B with experts in RAM (7B quality at ~1.9 GB VRAM, but 1.1–2.4 s per phrase);
   speculative decoding with a 1.8B draft (slower: experts in RAM make verification expensive).
