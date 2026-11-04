@@ -264,8 +264,33 @@ TRANSLATORS = {
 
 
 def mt_label(mt: str) -> str:
-    """What to print for the translator: the file name for a custom GGUF."""
-    return Path(env("VT_MT", "")).name if mt == "gguf" and env("VT_MT") else mt
+    """What to print for the translator: the model, or the file name of a custom GGUF."""
+    if mt == "gguf":
+        return Path(env("VT_MT", "gguf")).name
+    return {"hymt7": "Hy-MT2-7B", "hymt1.8": "Hy-MT2-1.8B", "gemma": "TranslateGemma-4B", "quickmt": QUICKMT}.get(mt, mt)
+
+
+def where(device: str) -> str:
+    return "відеокарта" if device == "cuda" else "процесор"
+
+
+def mt_where(mt: str, asr_device: str, ngl) -> str:
+    """quickmt follows recognition (GPU or CPU); an LLM translator runs in llama-server with -ngl layers on the GPU."""
+    if mt == "quickmt":
+        return where(asr_device)
+    n = str(ngl)
+    if n == "0":
+        return "процесор (VT_MT_NGL=999 — на відеокарту)"
+    if not n.isdigit() or int(n) >= 99:
+        return "відеокарта"
+    return f"частково відеокарта ({n} шарів), решта процесор"
+
+
+def print_placement(rows: list) -> None:
+    """Where each part runs, printed before loading: (part, model, CPU / GPU)."""
+    print("Де що працює:", flush=True)
+    for part, model, place in rows:
+        print(f"   {part:<16}{model:<28}{place}", flush=True)
 
 
 def load_qwen_tts(name: str):

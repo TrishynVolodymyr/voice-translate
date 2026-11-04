@@ -23,7 +23,12 @@ $port = if ($env:VT_LLAMA_PORT) { [int]$env:VT_LLAMA_PORT } else { 8093 }
 $argline = $args -join ' '
 # The last value wins (as in argparse): a launcher's own arguments come before the user's (%*).
 function Get-LastArg([string]$name) { $all = [regex]::Matches($argline, "--$name\s+(\S+)"); if ($all.Count) { $all[$all.Count - 1].Groups[1].Value } }
-$ngl = Get-LastArg 'ngl'; if (-not $ngl) { $ngl = '999' }
+# Layers of an LLM translator on the GPU, in this order: --ngl typed by the user > VT_MT_NGL in .env > the launcher's
+# own --ngl-default (game mode: 0 = CPU, to leave the VRAM to the game) > 999 (all on the GPU).
+$ngl = Get-LastArg 'ngl'
+if (-not $ngl) { $ngl = $env:VT_MT_NGL }
+if (-not $ngl) { $ngl = Get-LastArg 'ngl-default' }
+if (-not $ngl) { $ngl = '999' }
 # Translator, in this order: --mt typed by the user > VT_MT in .env > the launcher's own --mt-default > Hy-MT2-7B.
 # A value is a built-in name or the path to any GGUF (e.g. your own fine-tune), served by llama-server with its chat
 # template and prompted like Hy-MT2.
@@ -106,6 +111,10 @@ try {
         $llamaArgs = @('-m', $gguf, '--host', '127.0.0.1', '--port', $port, '-ngl', $ngl, '-c', '1024',
                        '-fa', 'on', '-t', '6', '--jinja', '--no-webui')
         Write-Host "Перекладач $(Split-Path -Leaf $gguf) (-ngl $ngl): http://127.0.0.1:$port"
+        if ($ngl -eq '0') {
+            Write-Host ('Перекладач працює на процесорі (повільніше: Hy-MT2-1.8B ~0,7–0,9 с на фразу замість ~0,1 с), щоб ' +
+                        'відеопам''ять лишилася грі. Якщо вона у вас є (напр. 16 ГБ) — VT_MT_NGL=999 у .env.') -ForegroundColor Yellow
+        }
         $llama = Start-Process -FilePath $server -PassThru -WindowStyle Hidden `
             -RedirectStandardOutput (Join-Path $root 'logs\llama-server.log') `
             -RedirectStandardError (Join-Path $root 'logs\llama-server.err.log') -ArgumentList $llamaArgs
@@ -123,13 +132,13 @@ try {
     $env:PYTHONUTF8 = '1'
     # --stream-test (from Start-StreamTest.bat) runs the text-only simultaneous translation test instead.
     $script = if ($args -contains '--stream-test') { 'stream_test.py' } else { 'voice_translate.py' }
-    # The translator resolved above replaces every --mt / --mt-default (Python knows a custom GGUF as "gguf")
+    # The translator and -ngl resolved above replace every --mt / --ngl given (Python knows a custom GGUF as "gguf")
     $pass = @()
     for ($i = 0; $i -lt $args.Count; $i++) {
-        if ($args[$i] -in '--mt', '--mt-default') { $i++; continue }
+        if ($args[$i] -in '--mt', '--mt-default', '--ngl', '--ngl-default') { $i++; continue }
         if ($args[$i] -ne '--stream-test') { $pass += $args[$i] }
     }
-    $pass += '--mt', $mtName
+    $pass += '--mt', $mtName, '--ngl', $ngl  # resolved values, so Python can show where the translator runs
     if ($cable) {
         $prevMic = Get-DefaultMic
         if ($prevMic.Name -like '*CABLE*') { throw 'Мікрофон за замовчуванням уже «CABLE Output» — поверніть свій у налаштуваннях звуку Windows' }

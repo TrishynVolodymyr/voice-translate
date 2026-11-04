@@ -164,7 +164,12 @@ the light ones); `VT_MT` in `.env` replaces it in all of them:
 A GGUF runs in the folder's llama-server with its own chat template and gets the Hy-MT2 instruction
 («Translate the following text into German…»), so a Hy-MT2 fine-tune fits as is; any chat model that follows such an
 instruction works too. A `--mt …` typed after a launcher wins over `.env` (`Start-VoiceTranslate-QuickMT.bat` always uses
-quickmt). In game mode a GGUF translator runs on the CPU (`--ngl 0`) to leave the VRAM to the game.
+quickmt).
+
+**Where it runs.** At start the program prints which part runs on the CPU and which on the GPU. A GGUF translator goes
+to the GPU, except in game mode: there it runs on the **CPU** to leave the VRAM to the game — slower (Hy-MT2-1.8B
+~0.7–0.9 s per phrase instead of ~0.1 s). With VRAM to spare (16 GB, or a small translator) put it on the GPU with
+`VT_MT_NGL=999` in `.env` — or a number of layers to split it; `VT_MT_NGL` applies to every launcher.
 
 Example — Polish → German, where quickmt has no model: `VT_MT=hymt1.8`, then `Download-Models.bat`, and every launcher
 uses Hy-MT2-1.8B.

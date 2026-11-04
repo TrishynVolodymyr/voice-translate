@@ -19,7 +19,8 @@ from pynput import keyboard
 
 sys.path.insert(0, str(Path(__file__).parent))
 from pipeline import (ASR, LOGS, SRC_NAME, TGT_NAME, TRANSLATORS, TTS, VOICES, HybridASR, Timer,  # noqa: E402
-                      check_languages, device_arg, env, mt_label, output_players, resample)
+                      check_languages, device_arg, env, mt_label, mt_where, output_players, print_placement,
+                      resample, where)
 
 MIC_SR = 48000
 
@@ -60,13 +61,16 @@ def main() -> None:
     outdir.mkdir(parents=True, exist_ok=True)
 
     check_languages(a.mt, a.asr)
-    print("Завантаження моделей…", flush=True)
     dev = a.asr_device if a.asr_device != "auto" else ("cuda" if a.mt == "quickmt" else "cpu")
-    print(f"Розпізнавання: {'відеокарта' if dev == 'cuda' else 'процесор'}", flush=True)
     # ASR before TTS: once torch has started CUDA, sherpa-onnx fails to load its CUDA provider (DLL error 1114) and
     # silently falls back to the CPU (2026-11-02).
     kind = a.asr if a.asr != "auto" else ("ultra" if dev == "cpu" else "parakeet")
-    print(f"Розпізнавач: {'Parakeet Ultra' if kind == 'ultra' else 'Parakeet v3'}", flush=True)
+    print_placement([
+        ("розпізнавання", {"ultra": "Parakeet Ultra", "hybrid": "Parakeet v3 + NeMo-uk"}.get(kind, "Parakeet v3"), where(dev)),
+        ("переклад", mt_label(a.mt), mt_where(a.mt, dev, a.ngl)),
+        ("голос", f"Qwen3-TTS {a.tts}", "відеокарта"),
+    ])
+    print("Завантаження моделей…", flush=True)
     asr = HybridASR(provider=dev) if kind == "hybrid" else ASR(provider=dev, kind=kind)
     mt = TRANSLATORS[a.mt][1](dev) if a.mt == "quickmt" else TRANSLATORS[a.mt][1]()
     tts = TTS(a.tts, ref, prompts.get(ref.stem, ""), xvec_only=(a.mode == "xvec"))

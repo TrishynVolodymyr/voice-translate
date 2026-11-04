@@ -18,7 +18,7 @@ import numpy as np
 import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).parent))
-from pipeline import LOGS, SRC, TTS, VOICES, check_languages, device_arg, env, output_players, resample  # noqa: E402
+from pipeline import LOGS, SRC, TTS, VOICES, check_languages, mt_label, mt_where, print_placement, where, device_arg, env, output_players, resample  # noqa: E402
 from stream_core import SR, HyMTPrefix, QuickMTPrefix, Segmenter, Speaker, StreamingASR, StreamingMT  # noqa: E402
 
 CHUNK = 0.1  # seconds of audio per producer chunk
@@ -86,6 +86,7 @@ def voice_summary(speaker, segments, inp, out):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--ngl", default="999", help="шарів перекладача на GPU (обробляє Start-скрипт)")
     ap.add_argument("--mt", default="quickmt", choices=["quickmt", "hymt7", "hymt1.8", "gguf"],
                     help="перекладач; hymt* і gguf — через llama-server, який запускає Start-скрипт")
     ap.add_argument("--wav", nargs="*", help="файли або 'phrases' (20 тестових фраз поспіль)")
@@ -115,11 +116,14 @@ def main():
     out = LOGS / f"stream-{time.strftime('%Y%m%d-%H%M%S')}"
     out.mkdir(parents=True)
     check_languages(a.mt, a.asr)
-    print("Завантаження моделей…", flush=True)
     dev = a.asr_device if a.asr_device != "auto" else ("cuda" if a.mt == "quickmt" else "cpu")
-    print(f"Розпізнавання: {'відеокарта' if dev == 'cuda' else 'процесор'}", flush=True)
     kind = a.asr if a.asr != "auto" else ("ultra" if dev == "cpu" else "parakeet")
-    print(f"Розпізнавач: {'Parakeet Ultra' if kind == 'ultra' else 'Parakeet v3'}", flush=True)
+    print_placement([
+        ("паузи", "Silero VAD", "процесор"),
+        ("розпізнавання", {"ultra": "Parakeet Ultra", "hybrid": "Parakeet v3 + NeMo-uk"}.get(kind, "Parakeet v3"), where(dev)),
+        ("переклад", mt_label(a.mt), mt_where(a.mt, dev, a.ngl)),
+    ] + ([("голос", f"Qwen3-TTS {a.tts}", "відеокарта")] if a.voice else []))
+    print("Завантаження моделей…", flush=True)
     asr = StreamingASR(hybrid=(kind == "hybrid"), provider=dev, kind="ultra" if kind == "ultra" else "parakeet")
     mt = StreamingMT(QuickMTPrefix(dev) if a.mt == "quickmt" else HyMTPrefix(), context_segments=2 if a.mt == "hymt7" else 0, hold=a.hold)
     mt.translate("Привіт", "", None)
